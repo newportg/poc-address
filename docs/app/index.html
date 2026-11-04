@@ -246,19 +246,14 @@ L.Icon.Default.mergeOptions({
 let map;
 let markers = [];
 let apiKey = localStorage.getItem('loqate_api_key') || '';
+const MAP_OVERVIEW = [20, 0];
 
 const DEMO_RESULTS = {
   'tf26rf': [
-    { id: 'GB|RM|B|24490784|ENG', text: '93 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
-    { id: 'GB|RM|B|24490785|ENG', text: '95 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
-    { id: 'GB|RM|B|24490786|ENG', text: '97 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
-    { id: 'GB|RM|B|24490787|ENG', text: '99 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
-    { id: 'GB|RM|B|24490788|ENG', text: '101 Teagues Crescent', description: 'Trench Telford TF2 6RF' }
+    { id: 'GB|RM|B|24490784|ENG', text: '93 Teagues Crescent', description: 'Trench Telford TF2 6RF' }
   ],
   'EC2M 7NH': [
-    { id: 'GB|RM|B|52840932|ENG', text: '1 Liverpool Street', description: 'London EC2M 7NH' },
-    { id: 'GB|RM|B|52840933|ENG', text: '2 Liverpool Street', description: 'London EC2M 7NH' },
-    { id: 'GB|RM|B|52840934|ENG', text: '3 Liverpool Street', description: 'London EC2M 7NH' }
+    { id: 'GB|RM|B|52840932|ENG', text: '1 Liverpool Street', description: 'London EC2M 7NH' }
   ]
 };
 
@@ -296,7 +291,7 @@ window.addEventListener('poc-address-app-shown', () => {
 });
 
 function initMap() {
-  map = L.map(get('#map')).setView([52.6784, -2.4453], 13);
+  map = L.map(get('#map')).setView(MAP_OVERVIEW, 2);
 
   // Use the canonical OSM tile endpoint and send a referer so GitHub Pages (https) works.
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -346,6 +341,7 @@ async function search() {
   get('#results').innerHTML = '';
   get('#detail').style.display = 'none';
   clearMarkers();
+  map.setView(MAP_OVERVIEW, 2);
 
   try {
     let results;
@@ -365,36 +361,54 @@ async function search() {
 function demoSearch(query) {
   const q = query.toUpperCase();
   for (const [key, value] of Object.entries(DEMO_RESULTS)) {
-    if (q.includes(key) || key.includes(q)) return value;
+    if (q === key || q.includes(key)) return value;
   }
-  return DEMO_RESULTS['tf26rf'];
+  return [];
 }
 
 function displayResults(results) {
   const list = get('#results');
   const bounds = L.latLngBounds();
+  if (results.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'result-description';
+    empty.textContent = apiKey
+      ? 'No addresses found.'
+      : 'No demo results found. Configure a Loqate API key for live address searches.';
+    list.appendChild(empty);
+    return;
+  }
+
   results.forEach((result, index) => {
     const li = document.createElement('li');
     li.innerHTML = '<div class="result-text">' + result.text + '</div><div class="result-description">' + result.description + '</div>';
     li.onclick = function() { selectResult(result, this); };
     list.appendChild(li);
-    const coords = getCoords(index, result);
-    const marker = L.marker(coords).addTo(map).bindPopup('<strong>' + result.text + '</strong><br>' + result.description);
-    marker.on('click', function() { selectResult(result, li); });
-    markers.push(marker);
-    result._marker = marker;
-    result._coords = coords;
-    bounds.extend(coords);
+    const coords = getCoordinates(result) || (!apiKey && getDemoCoordinates(result));
+    if (coords) {
+      addResultMarker(result, li, coords);
+      bounds.extend(coords);
+    }
   });
   if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
 }
 
-function getCoords(index, result) {
-  const demo = demoVerifyFor(result);
-  if (demo && demo.Latitude && demo.Longitude) {
-    return [parseFloat(demo.Latitude), parseFloat(demo.Longitude)];
+function getCoordinates(address) {
+  if (!address || address.Latitude === null || address.Latitude === undefined ||
+      address.Latitude === '' || address.Longitude === null ||
+      address.Longitude === undefined || address.Longitude === '') return null;
+  const latitude = Number(address.Latitude);
+  const longitude = Number(address.Longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+      latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
   }
-  return getDemoCoords(index, result.text);
+  return [latitude, longitude];
+}
+
+function getDemoCoordinates(result) {
+  const demo = demoVerifyFor(result);
+  return getCoordinates(demo);
 }
 
 function demoVerifyFor(result) {
@@ -404,15 +418,12 @@ function demoVerifyFor(result) {
   return null;
 }
 
-function getDemoCoords(index, text) {
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) { hash = ((hash << 5) - hash) + text.charCodeAt(i); hash = hash & hash; }
-  const baseLat = 51.5 + (hash % 100) / 100;
-  const baseLng = -1.5 + ((hash >> 8) % 100) / 100;
-  const gridSize = 10;
-  const row = Math.floor(index / gridSize);
-  const col = index % gridSize;
-  return [baseLat + (row - gridSize / 2) * 0.003, baseLng + (col - gridSize / 2) * 0.003];
+function addResultMarker(result, element, coords) {
+  const marker = L.marker(coords).addTo(map).bindPopup('<strong>' + result.text + '</strong><br>' + result.description);
+  marker.on('click', function() { selectResult(result, element); });
+  markers.push(marker);
+  result._marker = marker;
+  result._coords = coords;
 }
 
 function clearMarkers() {
@@ -428,14 +439,12 @@ async function selectResult(result, element) {
   detail.innerHTML = '<div class="loading">Loading address details...</div>';
   detail.style.display = 'block';
 
-  // Highlight and zoom to the selected address on the map
+  // Highlight any search-result markers until verification returns exact coordinates.
   markers.forEach(m => m.setOpacity(0.6));
   if (result._marker) {
     result._marker.setOpacity(1);
-    map.setView(result._coords, 17);
+    if (result._coords) map.setView(result._coords, 17);
     result._marker.openPopup();
-  } else if (result._coords) {
-    map.setView(result._coords, 17);
   }
 
   try {
@@ -446,6 +455,18 @@ async function selectResult(result, element) {
       data = demoRetrieve(result);
     }
     displayDetail(data);
+    const coords = getCoordinates(data);
+    if (coords) {
+      if (result._marker) {
+        result._marker.setLatLng(coords);
+        result._marker.setOpacity(1);
+      } else {
+        addResultMarker(result, element, coords);
+      }
+      result._coords = coords;
+      map.setView(coords, 17);
+      result._marker.openPopup();
+    }
   } catch (err) {
     detail.innerHTML = '<div class="error">Failed to load details: ' + err.message + '</div>';
   }
@@ -455,7 +476,7 @@ function demoRetrieve(result) {
   for (const [id, data] of Object.entries(DEMO_VERIFY)) {
     if (result.id === id || (data.Address1 && result.text.includes(data.Address1))) return data;
   }
-  return DEMO_VERIFY['GB|RM|B|24490784|ENG'];
+  throw new Error('No verified demo data is available for this address.');
 }
 
 function displayDetail(data) {
