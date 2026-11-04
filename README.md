@@ -38,6 +38,16 @@ generates the GitHub Pages site under `docs\`:
 The default vault location is the sibling `C:\Source\Obsidian\...` checkout shown
 above. Pass `-VaultProjectPath` if the vault is checked out elsewhere.
 
+## Publish to GitHub Pages
+
+The `Publish GitHub Pages` workflow deploys the committed `docs\` site whenever
+files in that folder change on `master`. Before pushing app or standards changes,
+run the publish script above and include the regenerated `docs\` files in your
+commit. You can also start a deployment manually from the repository's Actions tab.
+
+For the first deployment, set the repository's Pages source to **GitHub Actions**
+under **Settings → Pages**.
+
 ## Project layout
 
 - `src\app\` — standalone browser app and Loqate client.
