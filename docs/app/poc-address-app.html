@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>POC Address — Static App</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a25;
+  --border: #2a2a3a;
+  --text: #e8e8f0;
+  --text-dim: #8888a0;
+  --accent: #6366f1;
+  --accent2: #8b5cf6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --code-bg: #1e1e2e;
+}
+#poc-address-app * { margin: 0; padding: 0; box-sizing: border-box; }
+#poc-address-app {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+#poc-address-app h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+#poc-address-app .subtitle { color: var(--text-dim); margin-bottom: 1.5rem; }
+#poc-address-app .search-box {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--surface);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+#poc-address-app .search-box select,
+#poc-address-app .search-box input {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+#poc-address-app .search-box select { min-width: 150px; }
+#poc-address-app .search-box input { flex: 1; min-width: 200px; }
+#poc-address-app .search-box button {
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#poc-address-app .search-box button:hover { background: var(--accent2); }
+#poc-address-app .search-box button:disabled { background: var(--text-dim); cursor: not-allowed; }
+#poc-address-app .map-container {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+  height: 400px;
+}
+#poc-address-app #map { width: 100%; height: 100%; }
+#poc-address-app .results { list-style: none; margin-bottom: 1rem; }
+#poc-address-app .results li {
+  background: var(--surface);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#poc-address-app .results li:hover { background: var(--surface2); }
+#poc-address-app .results li.selected { border-color: var(--accent); background: rgba(99,102,241,0.1); }
+#poc-address-app .result-text { font-weight: 500; }
+#poc-address-app .result-description { color: var(--text-dim); font-size: 0.85rem; }
+#poc-address-app .detail-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+#poc-address-app .detail-panel h2 { margin-bottom: 1rem; font-size: 1.25rem; }
+#poc-address-app .formatted-address {
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--accent);
+}
+#poc-address-app .address-line { margin: 0.25rem 0; }
+#poc-address-app .badges { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+#poc-address-app .badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--surface2);
+  color: var(--text);
+}
+#poc-address-app .badge.verified { background: var(--success); color: white; }
+#poc-address-app .raw-fields { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+#poc-address-app .raw-fields summary { cursor: pointer; color: var(--text-dim); font-size: 0.9rem; padding: 0.5rem 0; }
+#poc-address-app .raw-fields summary:hover { color: var(--text); }
+#poc-address-app .fields-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.85rem; }
+#poc-address-app .fields-table td { padding: 0.5rem; border-bottom: 1px solid var(--border); }
+#poc-address-app .fields-table td:first-child { color: var(--text-dim); width: 40%; }
+#poc-address-app .error {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+#poc-address-app .loading { text-align: center; color: var(--text-dim); padding: 2rem; }
+#poc-address-app .demo-notice {
+  background: rgba(245,158,11,0.1);
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+#poc-address-app .tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+#poc-address-app .tab {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+#poc-address-app .tab:hover { background: var(--surface2); color: var(--text); }
+#poc-address-app .tab.active { background: var(--accent); color: white; }
+#poc-address-app .tab-content { display: none; }
+#poc-address-app .tab-content.active { display: block; }
+@media (max-width: 768px) {
+  #poc-address-app .search-box { flex-direction: column; }
+  #poc-address-app .search-box select, #poc-address-app .search-box input { width: 100%; }
+  #poc-address-app h1 { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="poc-address-app">
+<h1>POC Address — Static App</h1>
+<p class="subtitle">International address search and verification using LOQATE services</p>
+
+<div class="demo-notice">
+  <strong>Demo Mode:</strong> This app uses sample data until you enter an API key. Live LOQATE requests are sent directly from this browser.
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="poc-address-search">Address Search</div>
+  <div class="tab" data-tab="poc-address-config">Configuration</div>
+</div>
+
+<div class="tab-content active" id="poc-address-search">
+  <div class="search-box">
+    <select id="country">
+      <option value="GB">🇬🇧 United Kingdom</option>
+      <option value="US">🇺🇸 United States</option>
+      <option value="DE">🇩🇪 Germany</option>
+      <option value="FR">🇫🇷 France</option>
+      <option value="ES">🇪🇸 Spain</option>
+      <option value="IT">🇮🇹 Italy</option>
+      <option value="NL">🇳🇱 Netherlands</option>
+      <option value="BE">🇧🇪 Belgium</option>
+      <option value="IE">🇮🇪 Ireland</option>
+      <option value="PT">🇵🇹 Portugal</option>
+      <option value="AU">🇦🇺 Australia</option>
+      <option value="CA">🇨🇦 Canada</option>
+    </select>
+    <input type="text" id="query" placeholder="Enter postcode or address..." value="tf26rf">
+    <button data-action="search">Search</button>
+  </div>
+
+  <div id="error" class="error" style="display: none;"></div>
+  <div class="map-container"><div id="map"></div></div>
+  <div id="loading" class="loading" style="display: none;">Searching...</div>
+  <div id="detail" class="detail-panel" style="display: none;"></div>
+  <ul id="results" class="results"></ul>
+</div>
+
+<div class="tab-content" id="poc-address-config">
+  <div class="detail-panel">
+    <h2>API Configuration</h2>
+    <p style="color: var(--text-dim); margin-bottom: 1rem;">Enter your LOQATE API key to enable live API calls.</p>
+    <div class="search-box">
+      <input type="text" id="apiKey" placeholder="LOQATE API Key" style="flex: 1;">
+      <button data-action="save-key">Save Key</button>
+    </div>
+    <p id="keyStatus" style="color: var(--success); margin-top: 0.5rem;"></p>
+  </div>
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="loqate-client.js"></script>
+<script>
+(() => {
+const appRoot = document.getElementById('poc-address-app');
+const get = selector => appRoot.querySelector(selector);
+
+// Leaflet's default marker icons use relative paths that break when the page
+// is served from a subpath (e.g. GitHub Pages). Point them at absolute URLs.
+L.Icon.Default.mergeOptions({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+});
+
+let map;
+let markers = [];
+let apiKey = localStorage.getItem('loqate_api_key') || '';
+
+const DEMO_RESULTS = {
+  'tf26rf': [
+    { id: 'GB|RM|B|24490784|ENG', text: '93 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
+    { id: 'GB|RM|B|24490785|ENG', text: '95 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
+    { id: 'GB|RM|B|24490786|ENG', text: '97 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
+    { id: 'GB|RM|B|24490787|ENG', text: '99 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
+    { id: 'GB|RM|B|24490788|ENG', text: '101 Teagues Crescent', description: 'Trench Telford TF2 6RF' }
+  ],
+  'EC2M 7NH': [
+    { id: 'GB|RM|B|52840932|ENG', text: '1 Liverpool Street', description: 'London EC2M 7NH' },
+    { id: 'GB|RM|B|52840933|ENG', text: '2 Liverpool Street', description: 'London EC2M 7NH' },
+    { id: 'GB|RM|B|52840934|ENG', text: '3 Liverpool Street', description: 'London EC2M 7NH' }
+  ]
+};
+
+const DEMO_VERIFY = {
+  'GB|RM|B|24490784|ENG': {
+    Address: '93 Teagues Crescent<br>Trench<br>Telford<br>TF2 6RF',
+    Address1: '93 Teagues Crescent', Address2: 'Trench', Address3: 'Telford', Address4: 'TF2 6RF',
+    AddressFormat: 'Premise Thoroughfare<br>Locality<br>PostalCode',
+    Organisation: '', Building: '', Premise: '93', Thoroughfare: 'Teagues Crescent',
+    Locality: 'Telford', DependentLocality: 'Trench', PostalCode: 'TF2 6RF',
+    CountryName: 'United Kingdom', ISO3166_2: 'GB', ISO3166_3: 'GBR',
+    Latitude: '52.6784', Longitude: '-2.4453', AVC: 'V44-I44-P6-100', AQI: 'A'
+  },
+  'GB|RM|B|52840932|ENG': {
+    Address: '1 Liverpool Street<br>London<br>EC2M 7NH',
+    Address1: '1 Liverpool Street', Address2: 'London', Address3: 'EC2M 7NH',
+    AddressFormat: 'Premise Thoroughfare<br>Locality<br>PostalCode',
+    Organisation: '', Building: '', Premise: '1', Thoroughfare: 'Liverpool Street',
+    Locality: 'London', DependentLocality: '', PostalCode: 'EC2M 7NH',
+    CountryName: 'United Kingdom', ISO3166_2: 'GB', ISO3166_3: 'GBR',
+    Latitude: '51.517670', Longitude: '-0.084339', AVC: 'V44-I44-P6-100', AQI: 'A'
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  setupTabs();
+  loadKey();
+  get('[data-action="search"]').addEventListener('click', search);
+  get('[data-action="save-key"]').addEventListener('click', saveKey);
+});
+
+window.addEventListener('poc-address-app-shown', () => {
+  if (map) map.invalidateSize();
+});
+
+function initMap() {
+  map = L.map(get('#map')).setView([52.6784, -2.4453], 13);
+
+  // Use the canonical OSM tile endpoint and send a referer so GitHub Pages (https) works.
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+    crossOrigin: true
+  }).addTo(map);
+}
+
+function setupTabs() {
+  appRoot.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      appRoot.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      appRoot.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      get('#' + tab.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+function loadKey() {
+  if (apiKey) {
+    get('#apiKey').value = apiKey;
+    get('#keyStatus').textContent = '✓ API key configured';
+  }
+}
+
+function saveKey() {
+  apiKey = get('#apiKey').value.trim();
+  localStorage.setItem('loqate_api_key', apiKey);
+  get('#keyStatus').textContent = apiKey ? '✓ API key saved' : 'No API key set (demo mode)';
+}
+
+function showError(msg) {
+  const el = get('#error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+async function search() {
+  const country = get('#country').value;
+  const query = get('#query').value.trim();
+  if (!query) { showError('Please enter a search query'); return; }
+
+  get('#loading').style.display = 'block';
+  get('#results').innerHTML = '';
+  get('#detail').style.display = 'none';
+  clearMarkers();
+
+  try {
+    let results;
+    if (apiKey) {
+      results = await LoqateClient.search(apiKey, country, query);
+    } else {
+      results = demoSearch(query);
+    }
+    displayResults(results);
+  } catch (err) {
+    showError('Search failed: ' + err.message);
+  } finally {
+    get('#loading').style.display = 'none';
+  }
+}
+
+function demoSearch(query) {
+  const q = query.toUpperCase();
+  for (const [key, value] of Object.entries(DEMO_RESULTS)) {
+    if (q.includes(key) || key.includes(q)) return value;
+  }
+  return DEMO_RESULTS['tf26rf'];
+}
+
+function displayResults(results) {
+  const list = get('#results');
+  const bounds = L.latLngBounds();
+  results.forEach((result, index) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<div class="result-text">' + result.text + '</div><div class="result-description">' + result.description + '</div>';
+    li.onclick = function() { selectResult(result, this); };
+    list.appendChild(li);
+    const coords = getCoords(index, result);
+    const marker = L.marker(coords).addTo(map).bindPopup('<strong>' + result.text + '</strong><br>' + result.description);
+    marker.on('click', function() { selectResult(result, li); });
+    markers.push(marker);
+    result._marker = marker;
+    result._coords = coords;
+    bounds.extend(coords);
+  });
+  if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
+}
+
+function getCoords(index, result) {
+  const demo = demoVerifyFor(result);
+  if (demo && demo.Latitude && demo.Longitude) {
+    return [parseFloat(demo.Latitude), parseFloat(demo.Longitude)];
+  }
+  return getDemoCoords(index, result.text);
+}
+
+function demoVerifyFor(result) {
+  for (const [id, data] of Object.entries(DEMO_VERIFY)) {
+    if (result.id === id || (data.Address1 && result.text.includes(data.Address1))) return data;
+  }
+  return null;
+}
+
+function getDemoCoords(index, text) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) { hash = ((hash << 5) - hash) + text.charCodeAt(i); hash = hash & hash; }
+  const baseLat = 51.5 + (hash % 100) / 100;
+  const baseLng = -1.5 + ((hash >> 8) % 100) / 100;
+  const gridSize = 10;
+  const row = Math.floor(index / gridSize);
+  const col = index % gridSize;
+  return [baseLat + (row - gridSize / 2) * 0.003, baseLng + (col - gridSize / 2) * 0.003];
+}
+
+function clearMarkers() {
+  markers.forEach(m => m.remove());
+  markers = [];
+}
+
+async function selectResult(result, element) {
+  appRoot.querySelectorAll('.results li').forEach(li => li.classList.remove('selected'));
+  if (element) element.classList.add('selected');
+
+  const detail = get('#detail');
+  detail.innerHTML = '<div class="loading">Loading address details...</div>';
+  detail.style.display = 'block';
+
+  // Highlight and zoom to the selected address on the map
+  markers.forEach(m => m.setOpacity(0.6));
+  if (result._marker) {
+    result._marker.setOpacity(1);
+    map.setView(result._coords, 17);
+    result._marker.openPopup();
+  } else if (result._coords) {
+    map.setView(result._coords, 17);
+  }
+
+  try {
+    let data;
+    if (apiKey) {
+      data = await LoqateClient.retrieve(apiKey, result, get('#country').value);
+    } else {
+      data = demoRetrieve(result);
+    }
+    displayDetail(data);
+  } catch (err) {
+    detail.innerHTML = '<div class="error">Failed to load details: ' + err.message + '</div>';
+  }
+}
+
+function demoRetrieve(result) {
+  for (const [id, data] of Object.entries(DEMO_VERIFY)) {
+    if (result.id === id || (data.Address1 && result.text.includes(data.Address1))) return data;
+  }
+  return DEMO_VERIFY['GB|RM|B|24490784|ENG'];
+}
+
+function displayDetail(data) {
+  const detail = get('#detail');
+
+  // Build formatted address from AddressFormat
+  let formattedAddress = '';
+  if (data.AddressFormat) {
+    const lines = data.AddressFormat.split(/<br\s*\/?>/i);
+    formattedAddress = lines.map(line => {
+      const fields = line.trim().split(/\s+/);
+      return fields.map(f => data[f] || '').filter(Boolean).join(' ');
+    }).filter(Boolean).map(l => '<div class="address-line">' + l + '</div>').join('');
+  } else {
+    formattedAddress = '<div class="address-line">' + (data.Address || '') + '</div>';
+  }
+
+  // Fields already shown in formatted address - hide these from raw table
+  const hiddenFields = new Set([
+    'Address', 'Address1', 'Address2', 'Address3', 'Address4', 'Address5',
+    'AddressFormat', 'DeliveryAddress', 'DeliveryAddress1', 'DeliveryAddress2',
+    'DeliveryAddressFormat', 'AQI', 'AVC', 'AQIStatus', 'AVCStatus',
+    'AddressStatus', 'Address1Status', 'Address2Status', 'Address3Status', 'Address4Status',
+    'Sequence', 'MatchRuleLabel', 'HyphenClass', 'ID', 'Country'
+  ]);
+
+  // Build fields table, excluding redundant fields
+  const fieldsTable = Object.entries(data)
+    .filter(([k, v]) => {
+      if (v === null || v === undefined || v === '') return false;
+      if (hiddenFields.has(k)) return false;
+      // Skip status fields for individual components
+      if (k.endsWith('Status') && k !== 'AQIStatus' && k !== 'AVCStatus') return false;
+      return true;
+    })
+    .map(([k, v]) => '<tr><td>' + k + '</td><td>' + (typeof v === 'object' ? JSON.stringify(v) : v) + '</td></tr>')
+    .join('');
+
+  detail.innerHTML = '<h2>Verified Address</h2>' +
+    '<div class="formatted-address">' + formattedAddress + '</div>' +
+    '<div class="badges">' +
+    (data.AQI ? '<span class="badge' + (data.AQI === 'A' ? ' verified' : '') + '">AQI: ' + data.AQI + '</span>' : '') +
+    (data.AVC ? '<span class="badge">AVC: ' + data.AVC + '</span>' : '') +
+    '</div>' +
+    '<details class="raw-fields"><summary>Component Fields</summary>' +
+    '<table class="fields-table">' + fieldsTable + '</table></details>';
+}
+})();
+</script>
+
+</body>
+</html>

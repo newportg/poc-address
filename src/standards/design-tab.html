@@ -1,0 +1,100 @@
+<!-- POC Design Tab -->
+<div class="tab-content" id="design">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background: rgba(99,102,241,0.2);">🏗️</div>
+      <div>
+        <h3 style="margin: 0;">POC Address Application Design</h3>
+        <p style="margin: 0;">Target production application architecture</p>
+      </div>
+    </div>
+
+    <h3>Architecture</h3>
+    <div class="card" style="background: var(--code-bg); padding: 1rem;">
+      <svg viewBox="0 0 800 430" role="img" aria-label="Target architecture: Svelte browser application calls SvelteKit API routes, which use Loqate Find and Verify and a SQLite address cache" style="width: 100%; height: auto; max-width: 800px;">
+        <defs>
+          <marker id="address-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#8888a0"/>
+          </marker>
+        </defs>
+        <rect x="30" y="20" width="740" height="100" rx="8" fill="#17172a" stroke="#6366f1" stroke-width="2"/>
+        <text x="400" y="45" text-anchor="middle" fill="#e8e8f0" font-size="15" font-weight="600">Svelte 5 browser application</text>
+        <rect x="75" y="62" width="190" height="40" rx="6" fill="#1a1a25" stroke="#6366f1"/>
+        <text x="170" y="87" text-anchor="middle" fill="#e8e8f0" font-size="12">Search + country selector</text>
+        <rect x="305" y="62" width="190" height="40" rx="6" fill="#1a1a25" stroke="#6366f1"/>
+        <text x="400" y="87" text-anchor="middle" fill="#e8e8f0" font-size="12">Leaflet map + results</text>
+        <rect x="535" y="62" width="190" height="40" rx="6" fill="#1a1a25" stroke="#6366f1"/>
+        <text x="630" y="87" text-anchor="middle" fill="#e8e8f0" font-size="12">Verified address details</text>
+
+        <line x1="400" y1="120" x2="400" y2="158" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
+
+        <rect x="30" y="165" width="740" height="105" rx="8" fill="#10251f" stroke="#10b981" stroke-width="2"/>
+        <text x="400" y="190" text-anchor="middle" fill="#e8e8f0" font-size="15" font-weight="600">SvelteKit server routes</text>
+        <rect x="65" y="207" width="155" height="42" rx="6" fill="#1a1a25" stroke="#10b981"/>
+        <text x="142" y="225" text-anchor="middle" fill="#e8e8f0" font-size="11">/api/countries</text>
+        <text x="142" y="240" text-anchor="middle" fill="#8888a0" font-size="10">Country list</text>
+        <rect x="245" y="207" width="155" height="42" rx="6" fill="#1a1a25" stroke="#10b981"/>
+        <text x="322" y="225" text-anchor="middle" fill="#e8e8f0" font-size="11">/api/search</text>
+        <text x="322" y="240" text-anchor="middle" fill="#8888a0" font-size="10">Loqate Find</text>
+        <rect x="425" y="207" width="155" height="42" rx="6" fill="#1a1a25" stroke="#10b981"/>
+        <text x="502" y="225" text-anchor="middle" fill="#e8e8f0" font-size="11">/api/retrieve</text>
+        <text x="502" y="240" text-anchor="middle" fill="#8888a0" font-size="10">Cache + Loqate Verify</text>
+        <rect x="605" y="207" width="130" height="42" rx="6" fill="#1a1a25" stroke="#10b981"/>
+        <text x="670" y="225" text-anchor="middle" fill="#e8e8f0" font-size="11">/api/docs</text>
+        <text x="670" y="240" text-anchor="middle" fill="#8888a0" font-size="10">OpenAPI</text>
+
+        <line x1="215" y1="270" x2="215" y2="310" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
+        <line x1="400" y1="270" x2="400" y2="310" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
+        <line x1="585" y1="270" x2="585" y2="310" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
+
+        <rect x="55" y="318" width="205" height="82" rx="8" fill="#292115" stroke="#f59e0b" stroke-width="2"/>
+        <text x="157" y="345" text-anchor="middle" fill="#e8e8f0" font-size="13" font-weight="600">Loqate Find</text>
+        <text x="157" y="367" text-anchor="middle" fill="#8888a0" font-size="11">Capture Interactive API</text>
+        <text x="157" y="385" text-anchor="middle" fill="#8888a0" font-size="10">Recursive container search</text>
+        <rect x="297" y="318" width="205" height="82" rx="8" fill="#292115" stroke="#f59e0b" stroke-width="2"/>
+        <text x="400" y="345" text-anchor="middle" fill="#e8e8f0" font-size="13" font-weight="600">Loqate Verify</text>
+        <text x="400" y="367" text-anchor="middle" fill="#8888a0" font-size="11">Cleansing International API</text>
+        <text x="400" y="385" text-anchor="middle" fill="#8888a0" font-size="10">Formatted address + geocode</text>
+        <rect x="540" y="318" width="205" height="82" rx="8" fill="#20202a" stroke="#8b5cf6" stroke-width="2"/>
+        <text x="642" y="345" text-anchor="middle" fill="#e8e8f0" font-size="13" font-weight="600">SQLite address cache</text>
+        <text x="642" y="367" text-anchor="middle" fill="#8888a0" font-size="11">better-sqlite3</text>
+        <text x="642" y="385" text-anchor="middle" fill="#8888a0" font-size="10">Verified responses by address ID</text>
+      </svg>
+    </div>
+
+    <h3>Address lookup flow</h3>
+    <div class="flow">
+      <div class="flow-step">Select country + search</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">API searches Loqate Find</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Show results on map</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Select an address</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Cache or Loqate Verify</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Format verified address</div>
+    </div>
+
+    <h3>Components and API</h3>
+    <table>
+      <tr><th>Component</th><th>Responsibility</th></tr>
+      <tr><td>Svelte page + Leaflet map</td><td>Country selection, search, result list, markers, and verified address display.</td></tr>
+      <tr><td><code>/api/countries</code></td><td>Return the supported countries and flags.</td></tr>
+      <tr><td><code>/api/search</code></td><td>Call Loqate Find and drill into result containers.</td></tr>
+      <tr><td><code>/api/retrieve</code></td><td>Return a cached verification or call Loqate Verify and cache the response.</td></tr>
+      <tr><td><code>/api/docs</code> + <code>/docs</code></td><td>Expose the OpenAPI specification and Swagger UI.</td></tr>
+    </table>
+
+    <h3>Technology and address standard</h3>
+    <p>Svelte 5 and SvelteKit 2 provide the application and server routes. Leaflet
+    with OpenStreetMap provides the map; SQLite (<code>better-sqlite3</code>) caches
+    verified responses; Swagger UI presents the API contract. Address formatting
+    uses Loqate's <code>AddressFormat</code> response and the UPU S42 model.</p>
+
+    <p><strong>Design intent:</strong> this is the target production application
+    architecture. The included browser app is a separate static proof of concept;
+    it does not implement these server routes or the cache.</p>
+  </div>
+</div>

@@ -1,0 +1,1323 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>International Addressing Standards — UPU S42 vs ISO 20022</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a25;
+  --border: #2a2a3a;
+  --text: #e8e8f0;
+  --text-dim: #8888a0;
+  --accent: #6366f1;
+  --accent2: #8b5cf6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --code-bg: #1e1e2e;
+}
+#poc-address-app * { margin: 0; padding: 0; box-sizing: border-box; }
+#poc-address-app {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+#poc-address-app h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+#poc-address-app .subtitle { color: var(--text-dim); margin-bottom: 1.5rem; }
+#poc-address-app .search-box {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--surface);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+#poc-address-app .search-box select,
+#poc-address-app .search-box input {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+#poc-address-app .search-box select { min-width: 150px; }
+#poc-address-app .search-box input { flex: 1; min-width: 200px; }
+#poc-address-app .search-box button {
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#poc-address-app .search-box button:hover { background: var(--accent2); }
+#poc-address-app .search-box button:disabled { background: var(--text-dim); cursor: not-allowed; }
+#poc-address-app .map-container {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+  height: 400px;
+}
+#poc-address-app #map { width: 100%; height: 100%; }
+#poc-address-app .results { list-style: none; margin-bottom: 1rem; }
+#poc-address-app .results li {
+  background: var(--surface);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#poc-address-app .results li:hover { background: var(--surface2); }
+#poc-address-app .results li.selected { border-color: var(--accent); background: rgba(99,102,241,0.1); }
+#poc-address-app .result-text { font-weight: 500; }
+#poc-address-app .result-description { color: var(--text-dim); font-size: 0.85rem; }
+#poc-address-app .detail-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+#poc-address-app .detail-panel h2 { margin-bottom: 1rem; font-size: 1.25rem; }
+#poc-address-app .formatted-address {
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--accent);
+}
+#poc-address-app .address-line { margin: 0.25rem 0; }
+#poc-address-app .badges { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+#poc-address-app .badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--surface2);
+  color: var(--text);
+}
+#poc-address-app .badge.verified { background: var(--success); color: white; }
+#poc-address-app .raw-fields { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+#poc-address-app .raw-fields summary { cursor: pointer; color: var(--text-dim); font-size: 0.9rem; padding: 0.5rem 0; }
+#poc-address-app .raw-fields summary:hover { color: var(--text); }
+#poc-address-app .fields-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.85rem; }
+#poc-address-app .fields-table td { padding: 0.5rem; border-bottom: 1px solid var(--border); }
+#poc-address-app .fields-table td:first-child { color: var(--text-dim); width: 40%; }
+#poc-address-app .error {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+#poc-address-app .loading { text-align: center; color: var(--text-dim); padding: 2rem; }
+#poc-address-app .demo-notice {
+  background: rgba(245,158,11,0.1);
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+#poc-address-app .tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+#poc-address-app .tab {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+#poc-address-app .tab:hover { background: var(--surface2); color: var(--text); }
+#poc-address-app .tab.active { background: var(--accent); color: white; }
+#poc-address-app .tab-content { display: none; }
+#poc-address-app .tab-content.active { display: block; }
+@media (max-width: 768px) {
+  #poc-address-app .search-box { flex-direction: column; }
+  #poc-address-app .search-box select, #poc-address-app .search-box input { width: 100%; }
+  #poc-address-app h1 { font-size: 1.5rem; }
+}
+</style>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a25;
+  --border: #2a2a3a;
+  --text: #e8e8f0;
+  --text-dim: #8888a0;
+  --accent: #6366f1;
+  --accent2: #8b5cf6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --code-bg: #1e1e2e;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 2rem 0 1rem;
+  color: var(--text);
+}
+
+h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem;
+  color: var(--accent);
+}
+
+p { margin-bottom: 1rem; color: var(--text-dim); }
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  margin-bottom: 2rem;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.tab:hover { background: var(--surface2); color: var(--text); }
+.tab.active { background: var(--accent); color: white; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+th, td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  background: var(--surface2);
+  font-weight: 600;
+  color: var(--text);
+}
+
+tr:hover { background: var(--surface2); }
+
+/* Code blocks */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 1rem 0;
+}
+
+code {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  color: var(--accent);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.badge-upu { background: rgba(99, 102, 241, 0.2); color: var(--accent); }
+.badge-iso { background: rgba(139, 92, 246, 0.2); color: var(--accent2); }
+.badge-uk { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+/* Comparison */
+.comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.comparison-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.comparison-col h4 {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+/* Address format visualization */
+.address-format {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.address-line {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.address-line:last-child { border-bottom: none; }
+
+.line-number {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.line-content {
+  flex: 1;
+}
+
+.line-field {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.line-example {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+/* Collapsible */
+.collapsible {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+
+.collapsible-header {
+  padding: 1rem;
+  background: var(--surface2);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.collapsible-header:hover { background: var(--border); }
+
+.collapsible-content {
+  padding: 1rem;
+  display: none;
+  border-top: 1px solid var(--border);
+}
+
+.collapsible.open .collapsible-content { display: block; }
+
+/* Flow diagram */
+.flow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.flow-step {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.flow-arrow {
+  color: var(--text-dim);
+  font-size: 1.25rem;
+}
+
+/* Mermaid diagrams */
+.mermaid {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .comparison { grid-template-columns: 1fr; }
+  h1 { font-size: 1.75rem; }
+  body { padding: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<h1>International Addressing Standards</h1>
+<p class="subtitle">Understanding UPU S42 and ISO 20022 for global address management</p>
+
+<div class="tabs" id="standards-tabs">
+  <div class="tab active" data-tab="overview">Overview</div>
+  <div class="tab" data-tab="upu">UPU S42</div>
+  <div class="tab" data-tab="iso">ISO 20022</div>
+  <div class="tab" data-tab="uk">UK Format</div>
+  <div class="tab" data-tab="api">LOQATE API</div>
+  <div class="tab" data-tab="design">POC Design</div>
+  <div class="tab" data-tab="app">POC App</div>
+</div>
+
+<!-- Overview Tab -->
+<div class="tab-content active" id="overview">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background: rgba(99,102,241,0.2);">📋</div>
+      <div>
+        <h3 style="margin: 0;">Two Standards, Two Purposes</h3>
+        <p style="margin: 0;">Comparison of UPU S42 and ISO 20022 for global address management</p>
+      </div>
+    </div>
+
+    <p>Comparison of UPU S42 and ISO 20022 for global address management.</p>
+    <h3>Two Standards, Two Purposes</h3>
+    <h4>UPU S42 — Postal Addressing</h4>
+    <ul style="color: var(--text-dim); padding-left: 1.5rem;">
+      <li><strong>Scope:</strong> Global postal addressing standard</li>
+      <li><strong>Focus:</strong> Logical structure of postal addresses for mail delivery</li>
+      <li><strong>Application:</strong> Postal operations and cross-border mail</li>
+      <li><strong>Flexibility:</strong> Adaptable by any country</li>
+    </ul>
+    <h4>ISO 20022 — Financial Messaging</h4>
+    <ul style="color: var(--text-dim); padding-left: 1.5rem;">
+      <li><strong>Scope:</strong> Financial transaction data format</li>
+      <li><strong>Focus:</strong> Structured data for financial transactions</li>
+      <li><strong>Application:</strong> Banking, payments, regulatory compliance</li>
+      <li><strong>Coverage:</strong> Only 32 countries</li>
+    </ul>
+    <h3>Key Differences</h3>
+    <table>
+      <tr><th>Aspect</th><th>UPU S42</th><th>ISO 20022</th></tr>
+      <tr><td>Type</td><td>Postal addressing standard</td><td>Financial messaging standard</td></tr>
+      <tr><td>Structure</td><td>Generic elements + country templates</td><td>Highly structured XML tags</td></tr>
+      <tr><td>Adaptability</td><td>Flexible, country-specific</td><td>Rigid, fixed format</td></tr>
+      <tr><td>Best For</td><td>Web applications, mail delivery</td><td>Financial operations, compliance</td></tr>
+    </table>
+    <h3>Recommendation</h3>
+    <p>UPU S42 is the better choice for most address management scenarios due to its</p>
+    <p>flexibility and wider country coverage. See UPU-S42 and ISO-20022.</p>
+  </div>
+</div>
+
+<!-- UPU S42 Tab -->
+<div class="tab-content" id="upu">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background: rgba(99,102,241,0.2);">📮</div>
+      <div>
+        <h3 style="margin: 0;">UPU S42 Addressing Standard</h3>
+        <p style="margin: 0;">Universal Postal Union framework for postal addressing</p>
+      </div>
+    </div>
+
+    <p>Universal Postal Union framework for postal addressing.</p>
+    <p>The UPU S42 standard provides a comprehensive framework for postal addressing, designed to accommodate the diverse formats used by different countries. It includes a generic list of address elements and country-specific templates to guide users in formatting addresses correctly for mail delivery.</p>
+    <h3>Element Structure</h3>
+    <table>
+      <tr><th>Element</th><th>Field Name</th></tr>
+      <tr><td><strong>Organisation</strong></td><td>Organisation Name, Department Name</td></tr>
+      <tr><td><strong>Premises</strong></td><td>Sub Building Name, Building Name, Building Number</td></tr>
+      <tr><td><strong>Thoroughfare</strong></td><td>Dependent Thoroughfare Name, Dependent Thoroughfare Descriptor, Thoroughfare Name, Thoroughfare Descriptor</td></tr>
+      <tr><td><strong>Locality</strong></td><td>Double Dependent Locality, Dependent Locality, Post town</td></tr>
+      <tr><td><strong>Postcode</strong></td><td>Postcode</td></tr>
+      <tr><td><strong>PO Box</strong></td><td>PO Box</td></tr>
+      <tr><td><strong>Country</strong></td><td>Country Name, ISO3166-2, ISO3166-3, ISO3166-N</td></tr>
+    </table>
+    <h3>Key Features</h3>
+    <ul style="color: var(--text-dim); padding-left: 1.5rem;">
+      <li>Universal framework adaptable by any country</li>
+      <li>Generic list of address elements</li>
+      <li>Country-specific templates</li>
+      <li>Promotes efficient mail processing and data verification</li>
+      <li>Designed for easy adaptation by web applications</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ISO 20022 Tab -->
+<div class="tab-content" id="iso">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background: rgba(139,92,246,0.2);">💰</div>
+      <div>
+        <h3 style="margin: 0;">ISO 20022 Address Schema</h3>
+        <p style="margin: 0;">Financial messaging standard for transaction data</p>
+      </div>
+    </div>
+
+    <p>Financial messaging standard for transaction data.</p>
+    <p>ISO 20022 defines a standardised, structured data format for financial messaging, including specific, granular fields for address components, primarily for efficiency and accuracy in financial transactions.</p>
+    <p>> [!warning] Important</p>
+    <p>> ISO 20022 currently only applies to 32 countries.</p>
+    <h3>Address Fields</h3>
+    <table>
+      <tr><th>Field</th><th>XML Tag</th><th>Description</th></tr>
+      <tr><td>Department</td><td><code><Dept></code></td><td>Specific business units or departments</td></tr>
+      <tr><td>Sub Department</td><td><code><SubDept></code></td><td>The sub department name</td></tr>
+      <tr><td>Street Name</td><td><code><StrtNm></code></td><td>The name of the street</td></tr>
+      <tr><td>Building Number</td><td><code><BldgNb></code></td><td>The number of the building</td></tr>
+      <tr><td>Building Name</td><td><code><BldgNm></code></td><td>The name of the building</td></tr>
+      <tr><td>Floor</td><td><code><Flr></code></td><td>The building floor</td></tr>
+      <tr><td>Post Box</td><td><code><PstBx></code></td><td>The PostBox</td></tr>
+      <tr><td>Room</td><td><code><Room></code></td><td>Room number or name</td></tr>
+      <tr><td>Postal Code</td><td><code><PstCd></code></td><td>The postal code for the address</td></tr>
+      <tr><td>Town Name</td><td><code><TwnNm></code></td><td>The name of the city or town</td></tr>
+      <tr><td>Town Location Name</td><td><code><TwnLctnNm></code></td><td>A specific location within a town</td></tr>
+      <tr><td>District Name</td><td><code><DstrctNm></code></td><td>The name of a larger district</td></tr>
+      <tr><td>Country Subdivision</td><td><code><CtrySubDvsn></code></td><td>A state, province, or other subdivision</td></tr>
+      <tr><td>Country</td><td><code><Ctry></code></td><td>Two-character ISO country code</td></tr>
+      <tr><td>Address Line</td><td><code><AdrLine></code></td><td>Optional additional address information</td></tr>
+    </table>
+    <h3>Evolution</h3>
+    <p>The standard has evolved, with the 2019 version (PostalAddress24) offering a more detailed 15-field structure compared to the 2009 version (PostalAddress6).</p>
+  </div>
+</div>
+
+<!-- UK Format Tab -->
+<div class="tab-content" id="uk">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background: rgba(16,185,129,0.2);">🇬🇧</div>
+      <div>
+        <h3 style="margin: 0;">UK Address Format</h3>
+        <p style="margin: 0;">As described by UPU S42 (uses 9 of 15 elements)</p>
+      </div>
+    </div>
+
+    <p>As described by UPU S42 — uses 9 of 15 elements.</p>
+    <h3>Address Lines</h3>
+    <table>
+      <tr><th>#</th><th>Field</th><th>Example</th></tr>
+      <tr><td>1</td><td>Organization</td><td>"Acme Corp"</td></tr>
+      <tr><td>2</td><td>Department</td><td>"Marketing"</td></tr>
+      <tr><td>3</td><td>PostBox</td><td>"PO Box 123"</td></tr>
+      <tr><td>4</td><td>SubBuilding Building</td><td>"Unit 5, High Street"</td></tr>
+      <tr><td>5</td><td>Premise Thoroughfare</td><td>"93 Teagues Crescent"</td></tr>
+      <tr><td>6</td><td>DoubleDependentLocality</td><td>"Trench"</td></tr>
+      <tr><td>7</td><td>DependentLocality</td><td>"Telford"</td></tr>
+      <tr><td>8</td><td>Locality</td><td>"Telford"</td></tr>
+      <tr><td>9</td><td>PostalCode</td><td>"TF2 6RF"</td></tr>
+    </table>
+    <h3>Example: 93 Teagues Crescent</h3>
+    <pre><code>{
+  "Address": "93 Teagues Crescent&lt;br&gt;Trench&lt;br&gt;Telford&lt;br&gt;TF2 6RF",
+  "Address1": "93 Teagues Crescent",
+  "Address2": "Trench",
+  "Address3": "Telford",
+  "Address4": "TF2 6RF",
+  "DeliveryAddress": "93 Teagues Crescent&lt;br&gt;Trench",
+  "DeliveryAddress1": "93 Teagues Crescent",
+  "DeliveryAddress2": "Trench",
+  "AdministrativeArea": "Shropshire",
+  "Locality": "Telford",
+  "DependentLocality": "Trench",
+  "Thoroughfare": "Teagues Crescent",
+  "Premise": "93",
+  "PostalCode": "TF2 6RF",
+  "CountryName": "United Kingdom",
+  "ISO3166-2": "GB",
+  "ISO3166-3": "GBR",
+  "ISO3166-N": "826",
+  "PostalCodePrimary": "TF2 6RF",
+  "AVC": "V44-I44-P6-100",
+  "AQI": "A",
+  "Sequence": "1",
+  "MatchRuleLabel": "Rlfnp",
+  "HyphenClass": "B",
+  "PremiseNumber": "93",
+  "Country": "GB"
+}</code></pre>
+  </div>
+</div>
+
+<!-- LOQATE API Tab -->
+<div class="tab-content" id="api">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background: rgba(245,158,11,0.2);">🔌</div>
+      <div>
+        <h3 style="margin: 0;">LOQATE API Integration</h3>
+        <p style="margin: 0;">Reference implementation for address verification</p>
+      </div>
+    </div>
+
+    <p>Reference implementation for address verification.</p>
+    <h3>Find API (Interactive Search)</h3>
+    <pre><code>GET https://api.addressy.com/Capture/Interactive/Find/v1.20/json6.ws
+    ?Key=YOUR_API_KEY
+    &amp;Text=tf26rf
+    &amp;Countries=GB
+    &amp;Limit=100</code></pre>
+    <h4>Request </h4>
+    <pre><code>curl --request GET \
+  --url 'https://api.addressy.com/Capture/Interactive/Find/v1.20/json6.ws?Key=API-KEY&amp;Text=tf26rf'</code></pre>
+    <h4>Response </h4>
+    <pre><code>{
+	"Items":[
+		{
+			"Id":"gb-rm|ZWsIBaEBbtdL8wmKn2Iy",
+			"Type":"Postcode",
+			"Text":"TF2 6RF",
+			"Highlight":"0-3,4-7",
+			"Description":"Telford - 54 Addresses"
+		}
+	]
+}</code></pre>
+    <h4>Subsequent Request</h4>
+    <p>feed id from previous response into the Container request parameter </p>
+    <pre><code>curl --request GET \
+  --url 'https://api.addressy.com/Capture/Interactive/Find/v1.20/json6.ws?Key=API-KEY&amp;Text=tf26rf&amp;Container=gb-rm%7CZWsIBaEBbtdL8wmKn2Iy'</code></pre>
+    <h4>Response</h4>
+    <pre><code>{
+	"Items":[
+		{
+			"Id":"GB|RM|B|24490745|ENG",
+			"Type":"Address",
+			"Text":"41 Teagues Crescent",
+			"Highlight":"",
+			"Description":"Trench Telford TF2 6RF"
+		},
+		{
+			"Id":"GB|RM|B|24490746|ENG",
+			"Type":"Address",
+			"Text":"41A Teagues Crescent",
+			"Highlight":"",
+			"Description":"Trench Telford TF2 6RF"
+			},
+			...
+		}
+	]
+}</code></pre>
+    <h3>Recursive Find Flow</h3>
+    <p>Search: <code>"tf26rf"</code> → Postcode Container → <code>Container: gb-rm|xxx</code> → 54 Addresses</p>
+    <h3>Verify API Request (Detail API)</h3>
+    <p>Endpoint used by the app: <code>POST https://api.addressy.com/Cleansing/International/Batch/v1.20/json6.ws</code></p>
+    <pre><code>curl --request POST \
+  --url https://api.addressy.com/Cleansing/International/Batch/v1.10/json6.ws \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "Key": "...",
+  "GeoCode": true,
+  "Options": {
+    "Process": "Verify",
+    "Enhance": false
+  },
+  "Addresses": [
+    {
+      "Department": "",
+      "PostalCode": "EC2M 7NH",
+      "Country": "United Kingdom",
+      "Address": "1 Liverpool Street"
+    }
+  ],
+  "Options": {
+    "Process": "Verify",
+    "Enhance": false,
+    "ServerOptions": {
+      "OutputAddressFormat": "YES"
+    }
+  }
+}</code></pre>
+    <h4>Response</h4>
+    <pre><code>{
+    "AQI": "A",
+    "AVC": "V44-I44-P6-100",
+    "Address": "1 Liverpool Street&lt;br&gt;London&lt;br&gt;EC2M 7NH",
+    "Address1": "1 Liverpool Street",
+    "Address2": "London",
+    "Address3": "EC2M 7NH",
+    "AddressFormat": "Premise Thoroughfare&lt;br&gt;Locality&lt;br&gt;PostalCode",
+    "AdministrativeArea": "London",
+    "Country": "GB",
+    "CountryName": "United Kingdom",
+    "DeliveryAddress": "1 Liverpool Street",
+    "DeliveryAddress1": "1 Liverpool Street",
+    "DeliveryAddressFormat": "Premise Thoroughfare",
+    "GeoAccuracy": "I4",
+    "GeoDistance": "0.0",
+    "HyphenClass": "B",
+    "ID": "GB|RM|B|52840932|ENG",
+    "ISO3166-2": "GB",
+    "ISO3166-3": "GBR",
+    "ISO3166-N": "826",
+    "Latitude": "51.517670",
+    "Locality": "London",
+    "Longitude": "-0.084339",
+    "MatchRuleLabel": "Rlh",
+    "PostalCode": "EC2M 7NH",
+    "PostalCodePrimary": "EC2M 7NH",
+    "Premise": "1",
+    "PremiseNumber": "1",
+    "Sequence": "1",
+    "Thoroughfare": "Liverpool Street"
+  }</code></pre>
+  </div>
+</div>
+
+<!-- POC Design Tab -->
+<div class="tab-content" id="design">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background: rgba(99,102,241,0.2);">🏗️</div>
+      <div>
+        <h3 style="margin: 0;">POC Address Application Design</h3>
+        <p style="margin: 0;">Target production application architecture</p>
+      </div>
+    </div>
+
+    <h3>Architecture</h3>
+    <div class="card" style="background: var(--code-bg); padding: 1rem;">
+      <svg viewBox="0 0 800 430" role="img" aria-label="Target architecture: Svelte browser application calls SvelteKit API routes, which use Loqate Find and Verify and a SQLite address cache" style="width: 100%; height: auto; max-width: 800px;">
+        <defs>
+          <marker id="address-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#8888a0"/>
+          </marker>
+        </defs>
+        <rect x="30" y="20" width="740" height="100" rx="8" fill="#17172a" stroke="#6366f1" stroke-width="2"/>
+        <text x="400" y="45" text-anchor="middle" fill="#e8e8f0" font-size="15" font-weight="600">Svelte 5 browser application</text>
+        <rect x="75" y="62" width="190" height="40" rx="6" fill="#1a1a25" stroke="#6366f1"/>
+        <text x="170" y="87" text-anchor="middle" fill="#e8e8f0" font-size="12">Search + country selector</text>
+        <rect x="305" y="62" width="190" height="40" rx="6" fill="#1a1a25" stroke="#6366f1"/>
+        <text x="400" y="87" text-anchor="middle" fill="#e8e8f0" font-size="12">Leaflet map + results</text>
+        <rect x="535" y="62" width="190" height="40" rx="6" fill="#1a1a25" stroke="#6366f1"/>
+        <text x="630" y="87" text-anchor="middle" fill="#e8e8f0" font-size="12">Verified address details</text>
+
+        <line x1="400" y1="120" x2="400" y2="158" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
+
+        <rect x="30" y="165" width="740" height="105" rx="8" fill="#10251f" stroke="#10b981" stroke-width="2"/>
+        <text x="400" y="190" text-anchor="middle" fill="#e8e8f0" font-size="15" font-weight="600">SvelteKit server routes</text>
+        <rect x="65" y="207" width="155" height="42" rx="6" fill="#1a1a25" stroke="#10b981"/>
+        <text x="142" y="225" text-anchor="middle" fill="#e8e8f0" font-size="11">/api/countries</text>
+        <text x="142" y="240" text-anchor="middle" fill="#8888a0" font-size="10">Country list</text>
+        <rect x="245" y="207" width="155" height="42" rx="6" fill="#1a1a25" stroke="#10b981"/>
+        <text x="322" y="225" text-anchor="middle" fill="#e8e8f0" font-size="11">/api/search</text>
+        <text x="322" y="240" text-anchor="middle" fill="#8888a0" font-size="10">Loqate Find</text>
+        <rect x="425" y="207" width="155" height="42" rx="6" fill="#1a1a25" stroke="#10b981"/>
+        <text x="502" y="225" text-anchor="middle" fill="#e8e8f0" font-size="11">/api/retrieve</text>
+        <text x="502" y="240" text-anchor="middle" fill="#8888a0" font-size="10">Cache + Loqate Verify</text>
+        <rect x="605" y="207" width="130" height="42" rx="6" fill="#1a1a25" stroke="#10b981"/>
+        <text x="670" y="225" text-anchor="middle" fill="#e8e8f0" font-size="11">/api/docs</text>
+        <text x="670" y="240" text-anchor="middle" fill="#8888a0" font-size="10">OpenAPI</text>
+
+        <line x1="215" y1="270" x2="215" y2="310" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
+        <line x1="400" y1="270" x2="400" y2="310" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
+        <line x1="585" y1="270" x2="585" y2="310" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
+
+        <rect x="55" y="318" width="205" height="82" rx="8" fill="#292115" stroke="#f59e0b" stroke-width="2"/>
+        <text x="157" y="345" text-anchor="middle" fill="#e8e8f0" font-size="13" font-weight="600">Loqate Find</text>
+        <text x="157" y="367" text-anchor="middle" fill="#8888a0" font-size="11">Capture Interactive API</text>
+        <text x="157" y="385" text-anchor="middle" fill="#8888a0" font-size="10">Recursive container search</text>
+        <rect x="297" y="318" width="205" height="82" rx="8" fill="#292115" stroke="#f59e0b" stroke-width="2"/>
+        <text x="400" y="345" text-anchor="middle" fill="#e8e8f0" font-size="13" font-weight="600">Loqate Verify</text>
+        <text x="400" y="367" text-anchor="middle" fill="#8888a0" font-size="11">Cleansing International API</text>
+        <text x="400" y="385" text-anchor="middle" fill="#8888a0" font-size="10">Formatted address + geocode</text>
+        <rect x="540" y="318" width="205" height="82" rx="8" fill="#20202a" stroke="#8b5cf6" stroke-width="2"/>
+        <text x="642" y="345" text-anchor="middle" fill="#e8e8f0" font-size="13" font-weight="600">SQLite address cache</text>
+        <text x="642" y="367" text-anchor="middle" fill="#8888a0" font-size="11">better-sqlite3</text>
+        <text x="642" y="385" text-anchor="middle" fill="#8888a0" font-size="10">Verified responses by address ID</text>
+      </svg>
+    </div>
+
+    <h3>Address lookup flow</h3>
+    <div class="flow">
+      <div class="flow-step">Select country + search</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">API searches Loqate Find</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Show results on map</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Select an address</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Cache or Loqate Verify</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Format verified address</div>
+    </div>
+
+    <h3>Components and API</h3>
+    <table>
+      <tr><th>Component</th><th>Responsibility</th></tr>
+      <tr><td>Svelte page + Leaflet map</td><td>Country selection, search, result list, markers, and verified address display.</td></tr>
+      <tr><td><code>/api/countries</code></td><td>Return the supported countries and flags.</td></tr>
+      <tr><td><code>/api/search</code></td><td>Call Loqate Find and drill into result containers.</td></tr>
+      <tr><td><code>/api/retrieve</code></td><td>Return a cached verification or call Loqate Verify and cache the response.</td></tr>
+      <tr><td><code>/api/docs</code> + <code>/docs</code></td><td>Expose the OpenAPI specification and Swagger UI.</td></tr>
+    </table>
+
+    <h3>Technology and address standard</h3>
+    <p>Svelte 5 and SvelteKit 2 provide the application and server routes. Leaflet
+    with OpenStreetMap provides the map; SQLite (<code>better-sqlite3</code>) caches
+    verified responses; Swagger UI presents the API contract. Address formatting
+    uses Loqate's <code>AddressFormat</code> response and the UPU S42 model.</p>
+
+    <p><strong>Design intent:</strong> this is the target production application
+    architecture. The included browser app is a separate static proof of concept;
+    it does not implement these server routes or the cache.</p>
+  </div>
+</div>
+
+<!-- POC App Tab -->
+<div class="tab-content" id="app">
+  <div id="poc-address-app">
+<h1>POC Address — Static App</h1>
+<p class="subtitle">International address search and verification using LOQATE services</p>
+
+<div class="demo-notice">
+  <strong>Demo Mode:</strong> This app uses sample data until you enter an API key. Live LOQATE requests are sent directly from this browser.
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="poc-address-search">Address Search</div>
+  <div class="tab" data-tab="poc-address-config">Configuration</div>
+</div>
+
+<div class="tab-content active" id="poc-address-search">
+  <div class="search-box">
+    <select id="country">
+      <option value="GB">🇬🇧 United Kingdom</option>
+      <option value="US">🇺🇸 United States</option>
+      <option value="DE">🇩🇪 Germany</option>
+      <option value="FR">🇫🇷 France</option>
+      <option value="ES">🇪🇸 Spain</option>
+      <option value="IT">🇮🇹 Italy</option>
+      <option value="NL">🇳🇱 Netherlands</option>
+      <option value="BE">🇧🇪 Belgium</option>
+      <option value="IE">🇮🇪 Ireland</option>
+      <option value="PT">🇵🇹 Portugal</option>
+      <option value="AU">🇦🇺 Australia</option>
+      <option value="CA">🇨🇦 Canada</option>
+    </select>
+    <input type="text" id="query" placeholder="Enter postcode or address..." value="tf26rf">
+    <button data-action="search">Search</button>
+  </div>
+
+  <div id="error" class="error" style="display: none;"></div>
+  <div class="map-container"><div id="map"></div></div>
+  <div id="loading" class="loading" style="display: none;">Searching...</div>
+  <div id="detail" class="detail-panel" style="display: none;"></div>
+  <ul id="results" class="results"></ul>
+</div>
+
+<div class="tab-content" id="poc-address-config">
+  <div class="detail-panel">
+    <h2>API Configuration</h2>
+    <p style="color: var(--text-dim); margin-bottom: 1rem;">Enter your LOQATE API key to enable live API calls.</p>
+    <div class="search-box">
+      <input type="text" id="apiKey" placeholder="LOQATE API Key" style="flex: 1;">
+      <button data-action="save-key">Save Key</button>
+    </div>
+    <p id="keyStatus" style="color: var(--success); margin-top: 0.5rem;"></p>
+  </div>
+</div>
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>window.LoqateClient = (() => {
+  const findEndpoint = 'https://api.addressy.com/Capture/Interactive/Find/v1.20/json6.ws';
+  const verifyEndpoint = 'https://api.addressy.com/Cleansing/International/Batch/v1.20/json6.ws';
+
+  async function request(url, options) {
+    const response = await fetch(url, options);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error('LOQATE request failed with HTTP ' + response.status);
+    }
+
+    return data;
+  }
+
+  function getItems(data) {
+    if (data && Array.isArray(data.Items)) return data.Items;
+    if (Array.isArray(data)) return data;
+    return [];
+  }
+
+  function throwIfApiError(items) {
+    const error = items.find(item => item && item.Error);
+    if (error) {
+      throw new Error('LOQATE Error: ' + (error.Description || error.Error));
+    }
+  }
+
+  async function search(apiKey, country, query) {
+    const url = new URL(findEndpoint);
+    url.searchParams.set('Key', apiKey);
+    url.searchParams.set('Text', query);
+    url.searchParams.set('Countries', country);
+    url.searchParams.set('Limit', '100');
+
+    let items = getItems(await request(url));
+    if (items.length === 0) {
+      throw new Error('No results returned from LOQATE. Check API key and parameters.');
+    }
+
+    throwIfApiError(items);
+
+    let remainingDepth = 5;
+    while (remainingDepth > 0 && items.length > 0 && items[0].Type !== 'Address') {
+      url.searchParams.set('Container', items[0].Id);
+      const containerItems = getItems(await request(url));
+      throwIfApiError(containerItems);
+      if (containerItems.length === 0) break;
+      items = containerItems;
+      remainingDepth--;
+    }
+
+    return items
+      .filter(item => item.Type === 'Address')
+      .map(item => ({ id: item.Id, text: item.Text, description: item.Description }));
+  }
+
+  async function retrieve(apiKey, result, country) {
+    const payload = {
+      Key: apiKey,
+      GeoCode: true,
+      Addresses: [{
+        Id: result.id,
+        Address: result.text,
+        Address1: result.text,
+        Locality: result.description,
+        Country: country
+      }],
+      Options: {
+        Process: 'Verify',
+        Enhance: false,
+        ServerOptions: { OutputAddressFormat: 'YES' }
+      }
+    };
+    const data = await request(verifyEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const items = getItems(data);
+    throwIfApiError(items);
+    const item = items[0];
+    if (!item) {
+      throw new Error('No address details returned from LOQATE.');
+    }
+    return item.Matches && item.Matches[0] ? item.Matches[0] : item;
+  }
+
+  return { search, retrieve };
+})();
+</script>
+<script>
+(() => {
+const appRoot = document.getElementById('poc-address-app');
+const get = selector => appRoot.querySelector(selector);
+
+// Leaflet's default marker icons use relative paths that break when the page
+// is served from a subpath (e.g. GitHub Pages). Point them at absolute URLs.
+L.Icon.Default.mergeOptions({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+});
+
+let map;
+let markers = [];
+let apiKey = localStorage.getItem('loqate_api_key') || '';
+
+const DEMO_RESULTS = {
+  'tf26rf': [
+    { id: 'GB|RM|B|24490784|ENG', text: '93 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
+    { id: 'GB|RM|B|24490785|ENG', text: '95 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
+    { id: 'GB|RM|B|24490786|ENG', text: '97 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
+    { id: 'GB|RM|B|24490787|ENG', text: '99 Teagues Crescent', description: 'Trench Telford TF2 6RF' },
+    { id: 'GB|RM|B|24490788|ENG', text: '101 Teagues Crescent', description: 'Trench Telford TF2 6RF' }
+  ],
+  'EC2M 7NH': [
+    { id: 'GB|RM|B|52840932|ENG', text: '1 Liverpool Street', description: 'London EC2M 7NH' },
+    { id: 'GB|RM|B|52840933|ENG', text: '2 Liverpool Street', description: 'London EC2M 7NH' },
+    { id: 'GB|RM|B|52840934|ENG', text: '3 Liverpool Street', description: 'London EC2M 7NH' }
+  ]
+};
+
+const DEMO_VERIFY = {
+  'GB|RM|B|24490784|ENG': {
+    Address: '93 Teagues Crescent<br>Trench<br>Telford<br>TF2 6RF',
+    Address1: '93 Teagues Crescent', Address2: 'Trench', Address3: 'Telford', Address4: 'TF2 6RF',
+    AddressFormat: 'Premise Thoroughfare<br>Locality<br>PostalCode',
+    Organisation: '', Building: '', Premise: '93', Thoroughfare: 'Teagues Crescent',
+    Locality: 'Telford', DependentLocality: 'Trench', PostalCode: 'TF2 6RF',
+    CountryName: 'United Kingdom', ISO3166_2: 'GB', ISO3166_3: 'GBR',
+    Latitude: '52.6784', Longitude: '-2.4453', AVC: 'V44-I44-P6-100', AQI: 'A'
+  },
+  'GB|RM|B|52840932|ENG': {
+    Address: '1 Liverpool Street<br>London<br>EC2M 7NH',
+    Address1: '1 Liverpool Street', Address2: 'London', Address3: 'EC2M 7NH',
+    AddressFormat: 'Premise Thoroughfare<br>Locality<br>PostalCode',
+    Organisation: '', Building: '', Premise: '1', Thoroughfare: 'Liverpool Street',
+    Locality: 'London', DependentLocality: '', PostalCode: 'EC2M 7NH',
+    CountryName: 'United Kingdom', ISO3166_2: 'GB', ISO3166_3: 'GBR',
+    Latitude: '51.517670', Longitude: '-0.084339', AVC: 'V44-I44-P6-100', AQI: 'A'
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  setupTabs();
+  loadKey();
+  get('[data-action="search"]').addEventListener('click', search);
+  get('[data-action="save-key"]').addEventListener('click', saveKey);
+});
+
+window.addEventListener('poc-address-app-shown', () => {
+  if (map) map.invalidateSize();
+});
+
+function initMap() {
+  map = L.map(get('#map')).setView([52.6784, -2.4453], 13);
+
+  // Use the canonical OSM tile endpoint and send a referer so GitHub Pages (https) works.
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+    crossOrigin: true
+  }).addTo(map);
+}
+
+function setupTabs() {
+  appRoot.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      appRoot.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      appRoot.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      get('#' + tab.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+function loadKey() {
+  if (apiKey) {
+    get('#apiKey').value = apiKey;
+    get('#keyStatus').textContent = '✓ API key configured';
+  }
+}
+
+function saveKey() {
+  apiKey = get('#apiKey').value.trim();
+  localStorage.setItem('loqate_api_key', apiKey);
+  get('#keyStatus').textContent = apiKey ? '✓ API key saved' : 'No API key set (demo mode)';
+}
+
+function showError(msg) {
+  const el = get('#error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+async function search() {
+  const country = get('#country').value;
+  const query = get('#query').value.trim();
+  if (!query) { showError('Please enter a search query'); return; }
+
+  get('#loading').style.display = 'block';
+  get('#results').innerHTML = '';
+  get('#detail').style.display = 'none';
+  clearMarkers();
+
+  try {
+    let results;
+    if (apiKey) {
+      results = await LoqateClient.search(apiKey, country, query);
+    } else {
+      results = demoSearch(query);
+    }
+    displayResults(results);
+  } catch (err) {
+    showError('Search failed: ' + err.message);
+  } finally {
+    get('#loading').style.display = 'none';
+  }
+}
+
+function demoSearch(query) {
+  const q = query.toUpperCase();
+  for (const [key, value] of Object.entries(DEMO_RESULTS)) {
+    if (q.includes(key) || key.includes(q)) return value;
+  }
+  return DEMO_RESULTS['tf26rf'];
+}
+
+function displayResults(results) {
+  const list = get('#results');
+  const bounds = L.latLngBounds();
+  results.forEach((result, index) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<div class="result-text">' + result.text + '</div><div class="result-description">' + result.description + '</div>';
+    li.onclick = function() { selectResult(result, this); };
+    list.appendChild(li);
+    const coords = getCoords(index, result);
+    const marker = L.marker(coords).addTo(map).bindPopup('<strong>' + result.text + '</strong><br>' + result.description);
+    marker.on('click', function() { selectResult(result, li); });
+    markers.push(marker);
+    result._marker = marker;
+    result._coords = coords;
+    bounds.extend(coords);
+  });
+  if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
+}
+
+function getCoords(index, result) {
+  const demo = demoVerifyFor(result);
+  if (demo && demo.Latitude && demo.Longitude) {
+    return [parseFloat(demo.Latitude), parseFloat(demo.Longitude)];
+  }
+  return getDemoCoords(index, result.text);
+}
+
+function demoVerifyFor(result) {
+  for (const [id, data] of Object.entries(DEMO_VERIFY)) {
+    if (result.id === id || (data.Address1 && result.text.includes(data.Address1))) return data;
+  }
+  return null;
+}
+
+function getDemoCoords(index, text) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) { hash = ((hash << 5) - hash) + text.charCodeAt(i); hash = hash & hash; }
+  const baseLat = 51.5 + (hash % 100) / 100;
+  const baseLng = -1.5 + ((hash >> 8) % 100) / 100;
+  const gridSize = 10;
+  const row = Math.floor(index / gridSize);
+  const col = index % gridSize;
+  return [baseLat + (row - gridSize / 2) * 0.003, baseLng + (col - gridSize / 2) * 0.003];
+}
+
+function clearMarkers() {
+  markers.forEach(m => m.remove());
+  markers = [];
+}
+
+async function selectResult(result, element) {
+  appRoot.querySelectorAll('.results li').forEach(li => li.classList.remove('selected'));
+  if (element) element.classList.add('selected');
+
+  const detail = get('#detail');
+  detail.innerHTML = '<div class="loading">Loading address details...</div>';
+  detail.style.display = 'block';
+
+  // Highlight and zoom to the selected address on the map
+  markers.forEach(m => m.setOpacity(0.6));
+  if (result._marker) {
+    result._marker.setOpacity(1);
+    map.setView(result._coords, 17);
+    result._marker.openPopup();
+  } else if (result._coords) {
+    map.setView(result._coords, 17);
+  }
+
+  try {
+    let data;
+    if (apiKey) {
+      data = await LoqateClient.retrieve(apiKey, result, get('#country').value);
+    } else {
+      data = demoRetrieve(result);
+    }
+    displayDetail(data);
+  } catch (err) {
+    detail.innerHTML = '<div class="error">Failed to load details: ' + err.message + '</div>';
+  }
+}
+
+function demoRetrieve(result) {
+  for (const [id, data] of Object.entries(DEMO_VERIFY)) {
+    if (result.id === id || (data.Address1 && result.text.includes(data.Address1))) return data;
+  }
+  return DEMO_VERIFY['GB|RM|B|24490784|ENG'];
+}
+
+function displayDetail(data) {
+  const detail = get('#detail');
+
+  // Build formatted address from AddressFormat
+  let formattedAddress = '';
+  if (data.AddressFormat) {
+    const lines = data.AddressFormat.split(/<br\s*\/?>/i);
+    formattedAddress = lines.map(line => {
+      const fields = line.trim().split(/\s+/);
+      return fields.map(f => data[f] || '').filter(Boolean).join(' ');
+    }).filter(Boolean).map(l => '<div class="address-line">' + l + '</div>').join('');
+  } else {
+    formattedAddress = '<div class="address-line">' + (data.Address || '') + '</div>';
+  }
+
+  // Fields already shown in formatted address - hide these from raw table
+  const hiddenFields = new Set([
+    'Address', 'Address1', 'Address2', 'Address3', 'Address4', 'Address5',
+    'AddressFormat', 'DeliveryAddress', 'DeliveryAddress1', 'DeliveryAddress2',
+    'DeliveryAddressFormat', 'AQI', 'AVC', 'AQIStatus', 'AVCStatus',
+    'AddressStatus', 'Address1Status', 'Address2Status', 'Address3Status', 'Address4Status',
+    'Sequence', 'MatchRuleLabel', 'HyphenClass', 'ID', 'Country'
+  ]);
+
+  // Build fields table, excluding redundant fields
+  const fieldsTable = Object.entries(data)
+    .filter(([k, v]) => {
+      if (v === null || v === undefined || v === '') return false;
+      if (hiddenFields.has(k)) return false;
+      // Skip status fields for individual components
+      if (k.endsWith('Status') && k !== 'AQIStatus' && k !== 'AVCStatus') return false;
+      return true;
+    })
+    .map(([k, v]) => '<tr><td>' + k + '</td><td>' + (typeof v === 'object' ? JSON.stringify(v) : v) + '</td></tr>')
+    .join('');
+
+  detail.innerHTML = '<h2>Verified Address</h2>' +
+    '<div class="formatted-address">' + formattedAddress + '</div>' +
+    '<div class="badges">' +
+    (data.AQI ? '<span class="badge' + (data.AQI === 'A' ? ' verified' : '') + '">AQI: ' + data.AQI + '</span>' : '') +
+    (data.AVC ? '<span class="badge">AVC: ' + data.AVC + '</span>' : '') +
+    '</div>' +
+    '<details class="raw-fields"><summary>Component Fields</summary>' +
+    '<table class="fields-table">' + fieldsTable + '</table></details>';
+}
+})();
+</script>
+<script>
+document.querySelectorAll('#standards-tabs > .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#standards-tabs > .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('body > .tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'app') window.dispatchEvent(new Event('poc-address-app-shown'));
+  });
+});
+</script>
+
+</body>
+</html>
