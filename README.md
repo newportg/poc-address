@@ -32,7 +32,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1
 ```
 
 The script builds and starts the FastAPI container, serves the generated client,
-and opens the app. The API's interactive OpenAPI page is at
+and opens the app on client port `5174`. This keeps it separate from the POC
+Party client on port `5173`. The API's interactive OpenAPI page is at
 `http://127.0.0.1:8001/docs`.
 
 The runner carries a trusted Windows Zscaler root certificate into the container

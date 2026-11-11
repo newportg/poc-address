@@ -3,7 +3,7 @@ param(
     [int]$ApiPort = 8001,
 
     [ValidateRange(1, 65535)]
-    [int]$ClientPort = 5173,
+    [int]$ClientPort = 5174,
 
     [string]$CaCertificatePath
 )

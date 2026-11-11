@@ -3,7 +3,7 @@ const http = require("node:http");
 const path = require("node:path");
 
 const root = path.resolve(process.argv[2] || "");
-const port = Number(process.argv[3] || 5173);
+const port = Number(process.argv[3] || 5174);
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
