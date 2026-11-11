@@ -1,6 +1,11 @@
 window.LoqateClient = (() => {
   function apiUrl(path) {
-    const baseUrl = (window.ADDRESS_API_BASE_URL || '').replace(/\/+$/, '');
+    let baseUrl = (window.ADDRESS_API_BASE_URL || '').replace(/\/+$/, '');
+    if (!baseUrl && (window.location.protocol === 'file:' ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1')) {
+      baseUrl = 'http://127.0.0.1:8001';
+    }
     return `${baseUrl}${path}`;
   }
 
