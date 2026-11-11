@@ -4,228 +4,267 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>POC Address — Static App</title>
+<title>Address Explorer — Static POC</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-:root {
-  --bg: #0a0a0f;
-  --surface: #12121a;
-  --surface2: #1a1a25;
-  --border: #2a2a3a;
-  --text: #e8e8f0;
-  --text-dim: #8888a0;
-  --accent: #6366f1;
-  --accent2: #8b5cf6;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --code-bg: #1e1e2e;
-}
-#poc-address-app * { margin: 0; padding: 0; box-sizing: border-box; }
 #poc-address-app {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.6;
-  padding: 1rem;
-  max-width: 1200px;
+  --address-bg: #0a0a0f;
+  --address-surface: #111119;
+  --address-raised: #171721;
+  --address-soft: #1c1c28;
+  --address-border: #2a2a3a;
+  --address-text: #e8e8f0;
+  --address-muted: #89899f;
+  --address-accent: #7772f5;
+  --address-accent-2: #a16af4;
+  --address-green: #39cb9a;
+  --address-amber: #e9ae51;
+  --address-red: #ef7379;
+  color-scheme: dark;
+  min-width: 0;
   margin: 0 auto;
+  color: var(--address-text);
+  background: radial-gradient(ellipse at 50% -300px, #20203e 0, var(--address-bg) 62%);
+  font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
-#poc-address-app h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+#poc-address-app[data-theme="light"] {
+  --address-bg: #f5f6fa;
+  --address-surface: #fff;
+  --address-raised: #fff;
+  --address-soft: #f1f2f8;
+  --address-border: #dfe1eb;
+  --address-text: #25263a;
+  --address-muted: #65677d;
+  color-scheme: light;
+  background: radial-gradient(ellipse at 50% -300px, #e6e5ff 0, var(--address-bg) 62%);
 }
-#poc-address-app .subtitle { color: var(--text-dim); margin-bottom: 1.5rem; }
-#poc-address-app .search-box {
+#poc-address-app * { box-sizing: border-box; }
+#poc-address-app button,
+#poc-address-app input,
+#poc-address-app select { font: inherit; }
+#poc-address-app button { color: inherit; }
+#poc-address-app .app-shell { min-height: 100vh; }
+#poc-address-app .topbar {
+  min-height: 74px;
+  padding: 12px clamp(18px, 5vw, 76px);
   display: flex;
-  gap: 0.5rem;
-  background: var(--surface);
-  padding: 1rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--border);
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255,255,255,.055);
+  background: rgba(10,10,15,.84);
 }
-#poc-address-app .search-box select,
-#poc-address-app .search-box input {
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border);
-  background: var(--surface2);
-  color: var(--text);
-  font-size: 0.9rem;
-}
-#poc-address-app .search-box select { min-width: 150px; }
-#poc-address-app .search-box input { flex: 1; min-width: 200px; }
-#poc-address-app .search-box button {
-  padding: 0.5rem 1.5rem;
-  border-radius: 0.5rem;
-  border: none;
-  background: var(--accent);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-#poc-address-app .search-box button:hover { background: var(--accent2); }
-#poc-address-app .search-box button:disabled { background: var(--text-dim); cursor: not-allowed; }
-#poc-address-app .map-container {
-  border-radius: 0.75rem;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  margin-bottom: 1rem;
-  height: 400px;
-}
+#poc-address-app[data-theme="light"] .topbar { border-color: var(--address-border); background: rgba(255,255,255,.88); }
+#poc-address-app .brand { display: flex; align-items: center; gap: 11px; color: var(--address-text); text-decoration: none; font-size: 15px; font-weight: 720; letter-spacing: -.3px; }
+#poc-address-app .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; background: linear-gradient(140deg,#716df6,#a366ef); box-shadow: 0 5px 20px #655cf34a; color: white; font: bold 20px Georgia,serif; }
+#poc-address-app .brand-light { color: #b7b6c8; font-weight: 520; }
+#poc-address-app[data-theme="light"] .brand-light { color: #62647a; }
+#poc-address-app .brand small { display: block; margin-top: 2px; color: #74748b; font-size: 8px; line-height: 1.2; letter-spacing: 1.55px; }
+#poc-address-app .header-actions { display: flex; align-items: center; gap: 12px; }
+#poc-address-app .main { max-width: 1400px; margin: 0 auto; padding: 42px clamp(18px, 5vw, 76px) 25px; }
+#poc-address-app .intro { display: flex; justify-content: space-between; align-items: end; gap: 25px; margin-bottom: 24px; }
+#poc-address-app .eyebrow,
+#poc-address-app .section-kicker { color: #9392b5; font-size: 9px; font-weight: 720; letter-spacing: 1.55px; }
+#poc-address-app .eyebrow-line { display: inline-block; width: 25px; height: 1px; margin: 0 8px; background: #5a586f; vertical-align: middle; }
+#poc-address-app h1 { margin: 8px 0 4px; background: linear-gradient(105deg,#faf9ff 22%,#bdbbff 75%,#c9a6ff); background-clip: text; color: transparent; font-size: clamp(26px,3vw,34px); font-weight: 690; letter-spacing: -1.15px; line-height: 1.2; }
+#poc-address-app[data-theme="light"] h1 { background-image: linear-gradient(105deg,#393876 22%,#6460bd 75%,#8958b7); }
+#poc-address-app .subtitle { margin: 0; color: var(--address-muted); font-size: 13px; }
+#poc-address-app .button { min-height: 38px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 620; transition: .18s ease; white-space: nowrap; }
+#poc-address-app .button-primary { background: linear-gradient(120deg,#6b67ed,#8361e6); color: white; box-shadow: 0 5px 17px #6159e52e; }
+#poc-address-app .button-primary:hover { filter: brightness(1.13); transform: translateY(-1px); }
+#poc-address-app .button-quiet { border-color: #343443; background: transparent; color: #b0afc1; }
+#poc-address-app[data-theme="light"] .button-quiet { border-color: #d3d5e0; color: #4f5065; }
+#poc-address-app .button-quiet:hover { border-color: #555274; background: #1d1d2a; color: white; }
+#poc-address-app button:focus-visible,
+#poc-address-app input:focus-visible,
+#poc-address-app select:focus-visible { outline: 2px solid #8e87ff; outline-offset: 2px; }
+#poc-address-app .demo-notice { min-height: 42px; margin-bottom: 20px; padding: 9px 13px; display: flex; align-items: center; gap: 10px; border: 1px solid #725c2b5e; border-radius: 8px; background: linear-gradient(90deg,#d3942312,#d3942306); color: #d5bd8b; font-size: 11px; }
+#poc-address-app .notice-icon { width: 17px; height: 17px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid #b68b3d; border-radius: 50%; color: #e8bb64; font-size: 11px; }
+#poc-address-app .demo-notice strong { color: #f0c879; font-weight: 680; }
+#poc-address-app .search-box { margin-bottom: 15px; padding: 15px; display: grid; grid-template-columns: minmax(180px,.8fr) minmax(220px,1.4fr) auto; align-items: end; gap: 12px; border: 1px solid var(--address-border); border-radius: 10px; background: linear-gradient(150deg,#13131c,#111118); }
+#poc-address-app[data-theme="light"] .search-box { background: linear-gradient(150deg,#fff,#fafaff); }
+#poc-address-app .search-key-row { grid-column: 1 / -1; padding-top: 12px; display: grid; grid-template-columns: minmax(180px,.8fr) auto minmax(0,1.4fr); align-items: end; gap: 12px; border-top: 1px solid var(--address-border); }
+#poc-address-app .key-status { min-height: 37px; display: flex; align-items: center; color: var(--address-green); font-size: 10px; }
+#poc-address-app .key-guidance { grid-column: 1 / -1; margin: -5px 0 0; color: var(--address-amber); font-size: 10px; }
+#poc-address-app .field { min-width: 0; display: flex; flex-direction: column; gap: 5px; color: #aeacbf; font-size: 10px; font-weight: 600; }
+#poc-address-app[data-theme="light"] .field { color: #48495e; }
+#poc-address-app .field input,
+#poc-address-app .field select { width: 100%; min-width: 0; height: 37px; padding: 0 10px; border: 1px solid #343443; border-radius: 7px; background: #0f0f17; color: var(--address-text); font-size: 11px; }
+#poc-address-app[data-theme="light"] .field input,
+#poc-address-app[data-theme="light"] .field select { border-color: #d5d6e0; background: white; color: #292a40; }
+#poc-address-app .workspace { display: grid; grid-template-columns: minmax(260px,335px) minmax(0,1fr); align-items: start; gap: 15px; }
+#poc-address-app .panel { min-width: 0; overflow: hidden; border: 1px solid var(--address-border); border-radius: 12px; background: linear-gradient(150deg,#13131c,#111118); box-shadow: 0 12px 35px #00000014; }
+#poc-address-app[data-theme="light"] .panel { background: linear-gradient(150deg,#fff,#fafaff); }
+#poc-address-app .panel-heading { padding: 17px 18px 13px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid #222230; }
+#poc-address-app[data-theme="light"] .panel-heading { border-color: #e8e9f0; }
+#poc-address-app .panel-heading h2 { margin: 3px 0 0; color: var(--address-text); font-size: 16px; letter-spacing: -.2px; }
+#poc-address-app .count-pill { padding: 4px 9px; border: 1px solid #37364a; border-radius: 999px; background: #20202c; color: #bbb9d4; font-size: 10px; white-space: nowrap; }
+#poc-address-app .results { max-height: 490px; margin: 0; padding: 8px; overflow-y: auto; list-style: none; }
+#poc-address-app .results li { margin-bottom: 6px; padding: 12px; border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; transition: .15s ease; }
+#poc-address-app .results li:hover { background: #1b1b27; }
+#poc-address-app .results li.selected { border-color: #6e68f35e; background: linear-gradient(100deg,#6e68f322,#8e62e90a); box-shadow: inset 2px 0 #7f74fa; }
+#poc-address-app .results li.results-empty { padding: 28px 14px; color: var(--address-muted); text-align: center; font-size: 11px; cursor: default; }
+#poc-address-app .results li.results-empty:hover { background: transparent; }
+#poc-address-app .result-text { color: #e1e0e9; font-size: 11px; font-weight: 620; }
+#poc-address-app[data-theme="light"] .result-text { color: #34344f; }
+#poc-address-app .result-description { margin-top: 4px; color: #85849a; font-size: 10px; }
+#poc-address-app .map-detail-column { min-width: 0; display: grid; gap: 14px; }
+#poc-address-app .map-container { position: relative; height: 165px; overflow: hidden; border: 1px solid var(--address-border); border-radius: 12px; background: #171721; cursor: zoom-in; }
 #poc-address-app #map { width: 100%; height: 100%; }
-#poc-address-app .results { list-style: none; margin-bottom: 1rem; }
-#poc-address-app .results li {
-  background: var(--surface);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border);
-  margin-bottom: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
+#poc-address-app .map-open-button { position: absolute; z-index: 1000; top: 8px; right: 8px; width: 30px; height: 30px; border: 1px solid #d5d6e0; border-radius: 6px; background: rgba(255,255,255,.94); color: #34344f; font-size: 19px; line-height: 1; cursor: zoom-in; box-shadow: 0 1px 5px #0003; }
+#poc-address-app .map-open-button:hover { background: #fff; }
+#poc-address-app .map-dialog:not([open]) { display: none; }
+#poc-address-app .map-dialog[open] { width: min(1100px, calc(100vw - 32px)); height: min(820px, calc(100vh - 32px)); max-width: none; max-height: none; padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; border: 1px solid var(--address-border); border-radius: 14px; background: var(--address-surface); color: var(--address-text); }
+#poc-address-app .map-dialog::backdrop { background: rgba(4,4,10,.78); backdrop-filter: blur(4px); }
+#poc-address-app .map-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#poc-address-app .map-dialog-heading h2 { margin: 3px 0 0; font-size: 17px; }
+#poc-address-app .map-dialog-close { width: 34px; height: 34px; border: 1px solid var(--address-border); border-radius: 8px; background: transparent; color: var(--address-text); font-size: 22px; cursor: pointer; }
+#poc-address-app .full-map { flex: 1; min-height: 0; border: 1px solid var(--address-border); border-radius: 9px; background: var(--address-soft); }
+#poc-address-app .detail-panel { min-width: 0; padding: 18px; border: 1px solid var(--address-border); border-radius: 12px; background: linear-gradient(150deg,#13131c,#111118); }
+#poc-address-app[data-theme="light"] .detail-panel { background: linear-gradient(150deg,#fff,#fafaff); }
+#poc-address-app .detail-panel h2 { margin-bottom: 13px; color: var(--address-text); font-size: 17px; }
+#poc-address-app .formatted-address { margin-bottom: 13px; padding: 14px; border: 1px solid #302e40; border-left: 3px solid #7772f5; border-radius: 8px; background: #191822; color: #d8d6e7; font-size: 13px; }
+#poc-address-app[data-theme="light"] .formatted-address { border-color: #e0e1eb; background: #f7f7fb; color: #34344f; }
+#poc-address-app .address-line + .address-line { margin-top: 3px; }
+#poc-address-app .badges { margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 7px; }
+#poc-address-app .badge { padding: 3px 9px; border: 1px solid #37364a; border-radius: 999px; background: #20202c; color: #bbb9d4; font-size: 9px; font-weight: 650; }
+#poc-address-app .badge.verified { border-color: #3c725f; background: #183229; color: #61d5a5; }
+#poc-address-app .raw-fields { margin-top: 12px; border-top: 1px solid #292936; }
+#poc-address-app .raw-fields summary { padding: 11px 0 5px; color: #a7a5b7; cursor: pointer; font-size: 10px; }
+#poc-address-app .raw-fields summary:hover { color: var(--address-text); }
+#poc-address-app .fields-table { width: 100%; margin-top: 7px; border-collapse: collapse; font-size: 10px; overflow-wrap: anywhere; }
+#poc-address-app .fields-table td { padding: 7px; border-bottom: 1px solid #292936; color: #d0cfda; text-align: left; vertical-align: top; }
+#poc-address-app .fields-table td:first-child { width: 40%; color: #85849a; }
+#poc-address-app .error { margin-bottom: 12px; padding: 10px 12px; border: 1px solid #8d4649; border-radius: 8px; background: #3a2024; color: #ffb6b8; font-size: 11px; }
+#poc-address-app .loading { padding: 18px; color: var(--address-muted); text-align: center; font-size: 11px; }
+#poc-address-app .page-footer { margin-top: 22px; padding: 15px 2px; display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #222230; color: #626276; font-size: 8px; letter-spacing: .8px; }
+#poc-address-app .page-footer span:last-child { color: #85849a; font-size: 9px; letter-spacing: 0; text-align: right; }
+#poc-address-app[data-theme="light"] .page-footer { border-color: var(--address-border); color: #696b80; }
+#poc-address-app[data-theme="light"] .page-footer span:last-child { color: #696b80; }
+#poc-address-app[data-theme="light"] .demo-notice { color: #75551b; }
+#poc-address-app[data-theme="light"] .demo-notice strong { color: #75551b; }
+#poc-address-app[data-theme="light"] .section-kicker,
+#poc-address-app[data-theme="light"] .eyebrow { color: #66658e; }
+#poc-address-app[data-theme="light"] .fields-table td { border-color: #e0e1eb; color: #44465b; }
+#poc-address-app[data-theme="light"] .fields-table td:first-child { color: #74758a; }
+#poc-address-app[data-theme="light"] .raw-fields { border-color: #e0e1eb; }
+#poc-address-app[data-theme="light"] .raw-fields summary { color: #55566b; }
+@media (max-width: 760px) {
+  #poc-address-app .topbar { align-items: flex-start; flex-direction: column; }
+  #poc-address-app .header-actions { width: 100%; justify-content: flex-end; }
+  #poc-address-app .main { padding-top: 27px; }
+  #poc-address-app .workspace { grid-template-columns: minmax(0,1fr); }
+  #poc-address-app .results { max-height: 300px; }
+  #poc-address-app .search-box { grid-template-columns: minmax(0,1fr); }
+  #poc-address-app .search-key-row { grid-template-columns: minmax(0,1fr) auto; }
+  #poc-address-app .map-dialog[open] { width: calc(100vw - 16px); height: calc(100vh - 16px); padding: 10px; }
 }
-#poc-address-app .results li:hover { background: var(--surface2); }
-#poc-address-app .results li.selected { border-color: var(--accent); background: rgba(99,102,241,0.1); }
-#poc-address-app .result-text { font-weight: 500; }
-#poc-address-app .result-description { color: var(--text-dim); font-size: 0.85rem; }
-#poc-address-app .detail-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  margin-top: 1rem;
-}
-#poc-address-app .detail-panel h2 { margin-bottom: 1rem; font-size: 1.25rem; }
-#poc-address-app .formatted-address {
-  background: var(--code-bg);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  border-left: 4px solid var(--accent);
-}
-#poc-address-app .address-line { margin: 0.25rem 0; }
-#poc-address-app .badges { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
-#poc-address-app .badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: var(--surface2);
-  color: var(--text);
-}
-#poc-address-app .badge.verified { background: var(--success); color: white; }
-#poc-address-app .raw-fields { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; }
-#poc-address-app .raw-fields summary { cursor: pointer; color: var(--text-dim); font-size: 0.9rem; padding: 0.5rem 0; }
-#poc-address-app .raw-fields summary:hover { color: var(--text); }
-#poc-address-app .fields-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.85rem; }
-#poc-address-app .fields-table td { padding: 0.5rem; border-bottom: 1px solid var(--border); }
-#poc-address-app .fields-table td:first-child { color: var(--text-dim); width: 40%; }
-#poc-address-app .error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid var(--danger);
-  color: var(--danger);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-}
-#poc-address-app .loading { text-align: center; color: var(--text-dim); padding: 2rem; }
-#poc-address-app .demo-notice {
-  background: rgba(245,158,11,0.1);
-  border: 1px solid var(--warning);
-  color: var(--warning);
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
-}
-#poc-address-app .tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
-  flex-wrap: wrap;
-}
-#poc-address-app .tab {
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  color: var(--text-dim);
-}
-#poc-address-app .tab:hover { background: var(--surface2); color: var(--text); }
-#poc-address-app .tab.active { background: var(--accent); color: white; }
-#poc-address-app .tab-content { display: none; }
-#poc-address-app .tab-content.active { display: block; }
-@media (max-width: 768px) {
-  #poc-address-app .search-box { flex-direction: column; }
-  #poc-address-app .search-box select, #poc-address-app .search-box input { width: 100%; }
-  #poc-address-app h1 { font-size: 1.5rem; }
+@media (max-width: 560px) {
+  #poc-address-app .search-key-row { grid-template-columns: minmax(0,1fr); }
+  #poc-address-app .search-key-row .button { justify-self: start; }
+  #poc-address-app .demo-notice { align-items: flex-start; }
+  #poc-address-app .page-footer { flex-direction: column; }
+  #poc-address-app .page-footer span:last-child { text-align: left; }
 }
 </style>
 </head>
 <body>
 
-<div id="poc-address-app">
-<h1>POC Address — Static App</h1>
-<p class="subtitle">International address search and verification using LOQATE services</p>
+<div id="poc-address-app" data-theme="dark">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Address Explorer home">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span>Address<span class="brand-light"> Explorer</span><small>INTERNATIONAL ADDRESS SEARCH</small></span>
+      </a>
+      <div class="header-actions">
+        <a class="button button-quiet" href="../../docs/documentation.html">Documentation</a>
+        <button class="button button-quiet theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light theme" title="Switch to light theme">
+          <span class="theme-icon" aria-hidden="true">☼</span><span class="theme-label">Light</span>
+        </button>
+      </div>
+    </header>
+    <main class="main">
+      <section class="intro">
+        <div>
+          <div class="eyebrow">ADDRESS LOOKUP <span class="eyebrow-line"></span> DEMO WORKSPACE</div>
+          <h1>Find and verify an address.</h1>
+          <p class="subtitle">Search international addresses and inspect verified details.</p>
+        </div>
+      </section>
 
-<div class="demo-notice">
-  <strong>Demo Mode:</strong> This app uses sample data until you enter an API key. Live LOQATE requests are sent directly from this browser.
-</div>
+      <aside class="demo-notice" role="note">
+        <span class="notice-icon" aria-hidden="true">i</span>
+        <span><strong>Demonstration app.</strong> Without an API key, the app uses built-in sample addresses. Live LOQATE requests are sent directly from this browser. The key is stored in this browser and is not protected as a production secret.</span>
+      </aside>
 
-<div class="tabs">
-  <div class="tab active" data-tab="poc-address-search">Address Search</div>
-  <div class="tab" data-tab="poc-address-config">Configuration</div>
-</div>
+      <section id="poc-address-search">
+        <div class="search-box">
+          <label class="field">Country
+            <select id="country">
+              <option value="GB">🇬🇧 United Kingdom</option>
+              <option value="US">🇺🇸 United States</option>
+              <option value="DE">🇩🇪 Germany</option>
+              <option value="FR">🇫🇷 France</option>
+              <option value="ES">🇪🇸 Spain</option>
+              <option value="IT">🇮🇹 Italy</option>
+              <option value="NL">🇳🇱 Netherlands</option>
+              <option value="BE">🇧🇪 Belgium</option>
+              <option value="IE">🇮🇪 Ireland</option>
+              <option value="PT">🇵🇹 Portugal</option>
+              <option value="AU">🇦🇺 Australia</option>
+              <option value="CA">🇨🇦 Canada</option>
+            </select>
+          </label>
+          <label class="field">Postcode or address
+            <input type="text" id="query" placeholder="Enter postcode or address..." value="tf26rf">
+          </label>
+          <button class="button button-primary" type="button" data-action="search">Search addresses</button>
+          <div class="search-key-row">
+            <label class="field" for="apiKey">LOQATE API key
+              <input type="password" id="apiKey" autocomplete="new-password" placeholder="Enter API key">
+            </label>
+            <button class="button button-quiet" type="button" data-action="save-key">Save key</button>
+            <span id="keyStatus" class="key-status" role="status"></span>
+            <p class="key-guidance">The key is stored in this browser and included in direct requests to LOQATE; browser storage is not a secure secret store.</p>
+          </div>
+        </div>
 
-<div class="tab-content active" id="poc-address-search">
-  <div class="search-box">
-    <select id="country">
-      <option value="GB">🇬🇧 United Kingdom</option>
-      <option value="US">🇺🇸 United States</option>
-      <option value="DE">🇩🇪 Germany</option>
-      <option value="FR">🇫🇷 France</option>
-      <option value="ES">🇪🇸 Spain</option>
-      <option value="IT">🇮🇹 Italy</option>
-      <option value="NL">🇳🇱 Netherlands</option>
-      <option value="BE">🇧🇪 Belgium</option>
-      <option value="IE">🇮🇪 Ireland</option>
-      <option value="PT">🇵🇹 Portugal</option>
-      <option value="AU">🇦🇺 Australia</option>
-      <option value="CA">🇨🇦 Canada</option>
-    </select>
-    <input type="text" id="query" placeholder="Enter postcode or address..." value="tf26rf">
-    <button data-action="search">Search</button>
+        <div id="error" class="error" style="display: none;" role="alert"></div>
+        <div id="loading" class="loading" style="display: none;" role="status">Searching addresses…</div>
+        <div class="workspace">
+          <section class="panel results-panel" aria-labelledby="results-heading">
+            <div class="panel-heading">
+              <div><div class="section-kicker">MATCHING ADDRESSES</div><h2 id="results-heading">Search results</h2></div>
+              <span class="count-pill" id="result-count">Ready to search</span>
+            </div>
+            <ul id="results" class="results" aria-label="Address search results">
+              <li class="results-empty">Run a search to see address matches.</li>
+            </ul>
+          </section>
+          <div class="map-detail-column">
+            <div class="map-container" role="group" aria-label="Address map preview. Click to open the larger interactive map.">
+              <div id="map" role="application" aria-label="Address map preview"></div>
+              <button class="map-open-button" type="button" data-action="expand-map" aria-label="Open larger address map" title="Open larger map">⤢</button>
+            </div>
+            <div id="detail" class="detail-panel" style="display: none;"></div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="page-footer">
+        <span>ADDRESS EXPLORER <span class="footer-dot">/</span> STATIC POC</span>
+        <span>LOQATE address data · OpenStreetMap tiles · Changes stay in this browser</span>
+      </footer>
+    </main>
+    <dialog id="map-dialog" class="map-dialog" aria-labelledby="map-dialog-title">
+      <div class="map-dialog-heading">
+        <div><div class="section-kicker">ADDRESS SEARCH</div><h2 id="map-dialog-title">Address map</h2></div>
+        <button class="map-dialog-close" type="button" data-action="close-map" aria-label="Close map">×</button>
+      </div>
+      <div id="full-map" class="full-map" role="application" aria-label="Expanded interactive address map"></div>
+    </dialog>
   </div>
-
-  <div id="error" class="error" style="display: none;"></div>
-  <div class="map-container"><div id="map"></div></div>
-  <div id="loading" class="loading" style="display: none;">Searching...</div>
-  <div id="detail" class="detail-panel" style="display: none;"></div>
-  <ul id="results" class="results"></ul>
-</div>
-
-<div class="tab-content" id="poc-address-config">
-  <div class="detail-panel">
-    <h2>API Configuration</h2>
-    <p style="color: var(--text-dim); margin-bottom: 1rem;">Enter your LOQATE API key to enable live API calls.</p>
-    <div class="search-box">
-      <input type="text" id="apiKey" placeholder="LOQATE API Key" style="flex: 1;">
-      <button data-action="save-key">Save Key</button>
-    </div>
-    <p id="keyStatus" style="color: var(--success); margin-top: 0.5rem;"></p>
-  </div>
-</div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -244,7 +283,9 @@ L.Icon.Default.mergeOptions({
 });
 
 let map;
+let fullMap;
 let markers = [];
+let searchResults = [];
 let apiKey = localStorage.getItem('loqate_api_key') || '';
 const MAP_OVERVIEW = [20, 0];
 
@@ -280,10 +321,19 @@ const DEMO_VERIFY = {
 
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
-  setupTabs();
+  setupTheme();
   loadKey();
   get('[data-action="search"]').addEventListener('click', search);
   get('[data-action="save-key"]').addEventListener('click', saveKey);
+  get('[data-action="expand-map"]').addEventListener('click', openFullMap);
+  get('[data-action="close-map"]').addEventListener('click', () => get('#map-dialog').close());
+  get('#map-dialog').addEventListener('click', event => {
+    if (event.target === get('#map-dialog')) get('#map-dialog').close();
+  });
+  get('#map-dialog').addEventListener('close', () => {
+    fullMap?.remove();
+    fullMap = undefined;
+  });
 });
 
 window.addEventListener('poc-address-app-shown', () => {
@@ -291,7 +341,11 @@ window.addEventListener('poc-address-app-shown', () => {
 });
 
 function initMap() {
-  map = L.map(get('#map')).setView(MAP_OVERVIEW, 2);
+  map = L.map(get('#map'), {
+    center: MAP_OVERVIEW, zoom: 2, zoomControl: false,
+    dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+    boxZoom: false, keyboard: false, touchZoom: false
+  });
 
   // Use the canonical OSM tile endpoint and send a referer so GitHub Pages (https) works.
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -299,16 +353,38 @@ function initMap() {
     maxZoom: 19,
     crossOrigin: true
   }).addTo(map);
+  map.on('click', openFullMap);
 }
 
-function setupTabs() {
-  appRoot.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      appRoot.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      appRoot.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      tab.classList.add('active');
-      get('#' + tab.dataset.tab).classList.add('active');
-    });
+function loadTheme() {
+  try {
+    return localStorage.getItem('poc-address.theme.v1') === 'light' ? 'light' : 'dark';
+  } catch (error) {
+    console.warn('Could not read the theme preference.', error);
+    return 'dark';
+  }
+}
+
+function setTheme(theme, save = false) {
+  const nextTheme = theme === 'dark' ? 'light' : 'dark';
+  appRoot.dataset.theme = theme;
+  const toggle = get('#theme-toggle');
+  toggle.setAttribute('aria-label', 'Switch to ' + nextTheme + ' theme');
+  toggle.title = 'Switch to ' + nextTheme + ' theme';
+  get('.theme-icon').textContent = theme === 'dark' ? '☼' : '☾';
+  get('.theme-label').textContent = theme === 'dark' ? 'Light' : 'Dark';
+  if (!save) return;
+  try {
+    localStorage.setItem('poc-address.theme.v1', theme);
+  } catch (error) {
+    console.warn('Could not save the theme preference.', error);
+  }
+}
+
+function setupTheme() {
+  setTheme(loadTheme());
+  get('#theme-toggle').addEventListener('click', () => {
+    setTheme(appRoot.dataset.theme === 'dark' ? 'light' : 'dark', true);
   });
 }
 
@@ -339,6 +415,7 @@ async function search() {
 
   get('#loading').style.display = 'block';
   get('#results').innerHTML = '';
+  get('#result-count').textContent = 'Searching…';
   get('#detail').style.display = 'none';
   clearMarkers();
   map.setView(MAP_OVERVIEW, 2);
@@ -352,6 +429,7 @@ async function search() {
     }
     displayResults(results);
   } catch (err) {
+    get('#result-count').textContent = 'Search failed';
     showError('Search failed: ' + err.message);
   } finally {
     get('#loading').style.display = 'none';
@@ -361,7 +439,8 @@ async function search() {
 function demoSearch(query) {
   const q = query.toUpperCase();
   for (const [key, value] of Object.entries(DEMO_RESULTS)) {
-    if (q === key || q.includes(key)) return value;
+    const normalizedKey = key.toUpperCase();
+    if (q === normalizedKey || q.includes(normalizedKey)) return value;
   }
   return [];
 }
@@ -369,9 +448,11 @@ function demoSearch(query) {
 function displayResults(results) {
   const list = get('#results');
   const bounds = L.latLngBounds();
+  searchResults = results;
+  get('#result-count').textContent = results.length + (results.length === 1 ? ' match' : ' matches');
   if (results.length === 0) {
     const empty = document.createElement('li');
-    empty.className = 'result-description';
+    empty.className = 'results-empty';
     empty.textContent = apiKey
       ? 'No addresses found.'
       : 'No demo results found. Configure a Loqate API key for live address searches.';
@@ -383,6 +464,7 @@ function displayResults(results) {
     const li = document.createElement('li');
     li.innerHTML = '<div class="result-text">' + result.text + '</div><div class="result-description">' + result.description + '</div>';
     li.onclick = function() { selectResult(result, this); };
+    result._listElement = li;
     list.appendChild(li);
     const coords = getCoordinates(result) || (!apiKey && getDemoCoordinates(result));
     if (coords) {
@@ -429,6 +511,40 @@ function addResultMarker(result, element, coords) {
 function clearMarkers() {
   markers.forEach(m => m.remove());
   markers = [];
+  searchResults = [];
+}
+
+function openFullMap() {
+  if (!map || !L) return;
+  const mapDialog = get('#map-dialog');
+  const center = map.getCenter();
+  const zoom = map.getZoom();
+  mapDialog.showModal();
+  requestAnimationFrame(() => {
+    fullMap?.remove();
+    fullMap = L.map(get('#full-map')).setView(center, zoom);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+      crossOrigin: true
+    }).addTo(fullMap);
+
+    searchResults.forEach(result => {
+      const coords = result._coords || getCoordinates(result) || (!apiKey && getDemoCoordinates(result));
+      if (!coords) return;
+      const marker = L.marker(coords).addTo(fullMap);
+      const popup = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = result.text;
+      popup.append(title, document.createElement('br'), document.createTextNode(result.description || ''));
+      marker.bindPopup(popup);
+      marker.on('click', () => {
+        mapDialog.close();
+        selectResult(result, result._listElement);
+      });
+    });
+    fullMap.invalidateSize();
+  });
 }
 
 async function selectResult(result, element) {

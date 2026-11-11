@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>International Addressing Standards — UPU S42 vs ISO 20022</title>
-{{APP_HEAD}}
 <style>
 :root {
   --bg: #0a0a0f;
@@ -64,6 +63,30 @@ p { margin-bottom: 1rem; color: var(--text-dim); }
   color: var(--text-dim);
   margin-bottom: 2rem;
 }
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.page-header h1 { margin-bottom: 0.5rem; }
+.page-header .subtitle { margin-bottom: 0; }
+
+.open-app-link {
+  flex: 0 0 auto;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.open-app-link:hover { filter: brightness(1.12); }
 
 /* Tabs */
 .tabs {
@@ -303,13 +326,19 @@ code {
   .comparison { grid-template-columns: 1fr; }
   h1 { font-size: 1.75rem; }
   body { padding: 1rem; }
+  .page-header { flex-direction: column; }
 }
 </style>
 </head>
 <body>
 
-<h1>International Addressing Standards</h1>
-<p class="subtitle">Understanding UPU S42 and ISO 20022 for global address management</p>
+<header class="page-header">
+  <div>
+    <h1>International Addressing Standards</h1>
+    <p class="subtitle">Understanding UPU S42 and ISO 20022 for global address management</p>
+  </div>
+  <a class="open-app-link" href="./index.html">Open Address Explorer</a>
+</header>
 
 <div class="tabs" id="standards-tabs">
   <div class="tab active" data-tab="overview">Overview</div>
@@ -318,16 +347,10 @@ code {
   <div class="tab" data-tab="uk">UK Format</div>
   <div class="tab" data-tab="api">LOQATE API</div>
   <div class="tab" data-tab="design">POC Design</div>
-  <div class="tab" data-tab="app">POC App</div>
 </div>
 
 {{OVERVIEW}}{{UPU}}{{ISO}}{{UK}}{{API}}{{DESIGN}}
-<!-- POC App Tab -->
-<div class="tab-content" id="app">
-  {{APP}}
-</div>
 
-{{APP_SCRIPTS}}
 <script>
 document.querySelectorAll('#standards-tabs > .tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -335,7 +358,6 @@ document.querySelectorAll('#standards-tabs > .tab').forEach(tab => {
     document.querySelectorAll('body > .tab-content').forEach(c => c.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById(tab.dataset.tab).classList.add('active');
-    if (tab.dataset.tab === 'app') window.dispatchEvent(new Event('poc-address-app-shown'));
   });
 });
 </script>

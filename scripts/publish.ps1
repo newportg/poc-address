@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-  Builds the international-addressing reference page into docs/.
+  Publishes Address Explorer and its documentation into docs/.
 .DESCRIPTION
   - Content tabs are built from the Address knowledge-vault notes.
   - docs/design.md is copied from the Address POC design note.
   - The design tab is inserted from src/standards/design-tab.html.
-  - The page skeleton comes from src/standards/template.html.
+  - docs/index.html is the primary app; docs/documentation.html contains the reference tabs.
 .EXAMPLE
   powershell -File scripts/publish.ps1
 #>
@@ -140,50 +140,29 @@ $uk       = Tab-Block 'UK Format Tab' 'uk'       $ukIcon  'rgba(16,185,129,0.2)'
 $api      = Tab-Block 'LOQATE API Tab' 'api'     $apiIcon 'rgba(245,158,11,0.2)'   'LOQATE API Integration' 'Reference implementation for address verification' (Convert-WikiPage (Join-Path $wiki 'Loqate-api.md'))
 $design   = Get-Content (Join-Path $repoRoot 'src\standards\design-tab.html') -Raw -Encoding UTF8
 
-$appSource = Join-Path $repoRoot 'src\app'
-$appHtml = Get-Content (Join-Path $appSource 'poc-address-app.html') -Raw -Encoding UTF8
-$appStyleMatch = [regex]::Match($appHtml, '(?is)<style>(.*?)</style>')
-$appBodyMatch = [regex]::Match($appHtml, '(?is)<body[^>]*>(.*?)</body>')
-$appScriptMatch = [regex]::Match($appHtml, '(?is)<script>(.*?)</script>')
-if (-not $appStyleMatch.Success -or -not $appBodyMatch.Success -or -not $appScriptMatch.Success) {
-  throw 'Could not extract the POC app style, body, and script for embedding.'
-}
-
-$appMarkup = [regex]::Replace($appBodyMatch.Groups[1].Value, '(?is)<script\b[^>]*>.*?</script>', '').Trim()
-$appClientScript = Get-Content (Join-Path $appSource 'loqate-client.js') -Raw -Encoding UTF8
-$appHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />' + "`n" +
-           '<style>' + $appStyleMatch.Groups[1].Value + '</style>'
-$appScripts = '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>' + "`n" +
-              '<script>' + $appClientScript + '</script>' + "`n" +
-              '<script>' + $appScriptMatch.Groups[1].Value + '</script>'
-
 $page = $tmpl
-$page = $page.Replace('{{APP_HEAD}}', $appHead)
 $page = $page.Replace('{{OVERVIEW}}', $overview)
 $page = $page.Replace('{{UPU}}',      $upu)
 $page = $page.Replace('{{ISO}}',      $iso)
 $page = $page.Replace('{{UK}}',       $uk)
 $page = $page.Replace('{{API}}',      $api)
 $page = $page.Replace('{{DESIGN}}',   $design)
-$page = $page.Replace('{{APP}}',      $appMarkup)
-$page = $page.Replace('{{APP_SCRIPTS}}', $appScripts)
 
-$target = Join-Path $out 'index.html'
 New-Item -ItemType Directory -Force $out | Out-Null
-Set-Content $target $page -NoNewline -Encoding UTF8
-Write-Host "Wrote $target"
+Set-Content (Join-Path $out 'documentation.html') $page -NoNewline -Encoding UTF8
+Write-Host "Wrote $(Join-Path $out 'documentation.html')"
 
 # Publish the production design note from its knowledge-vault source.
 Copy-Item -LiteralPath (Join-Path $wiki 'Poc-Design.md') -Destination (Join-Path $out 'design.md')
 Write-Host "Copied production design from $wiki"
 
-# Also publish standalone app files for direct access.
-$outputApp = Join-Path $out 'app'
-New-Item -ItemType Directory -Force $outputApp | Out-Null
-Copy-Item (Join-Path $appSource 'poc-address-app.html') (Join-Path $outputApp 'poc-address-app.html')
-Copy-Item (Join-Path $appSource 'loqate-client.js') (Join-Path $outputApp 'loqate-client.js')
-Copy-Item (Join-Path $appSource 'poc-address-app.html') (Join-Path $outputApp 'index.html')
+$appSource = Join-Path $repoRoot 'src\app'
+$appHtml = Get-Content (Join-Path $appSource 'poc-address-app.html') -Raw -Encoding UTF8
+
+$rootApp = $appHtml.Replace('../../docs/documentation.html', './documentation.html')
+Set-Content (Join-Path $out 'index.html') $rootApp -NoNewline -Encoding UTF8
+Copy-Item (Join-Path $appSource 'loqate-client.js') (Join-Path $out 'loqate-client.js')
 
 # Stage for GitHub Pages (served from /docs on the repo root)
 New-Item -ItemType File -Force (Join-Path $out '.nojekyll') | Out-Null
-Write-Host "Staged standards pages and embedded app with loqate-client.js"
+Write-Host "Published Address Explorer as the home page and the standards guide separately."

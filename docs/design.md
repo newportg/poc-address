@@ -1,182 +1,113 @@
 # POC Address Application Design
 
-Architecture, data flow, and technology stack for the intended production application,
-as presented on the POC Design tab of the [reference page](C:/Source/Repos/poc-address/docs/index.html).
+This note describes the current Address proof of concept, as published on the
+[documentation page](C:/Source/Repos/poc-address/docs/documentation.html). The implementation
+uses the same browser-native approach as the Asset POC: static HTML, CSS, and
+JavaScript, without a frontend framework or build system.
 
 ## Architecture
 
 ```mermaid
-flowchart TB
-    subgraph Client["Svelte SPA"]
-        direction LR
-        SB["Search Bar<br/>+ Country Selector"]
-        MAP["Leaflet Map<br/>OpenStreetMap"]
-        RL["Results List<br/>Clickable Items"]
-        SB ~~~ MAP ~~~ RL
-    end
+flowchart LR
+    Browser["Static browser app<br/>HTML + CSS + JavaScript"]
+    UI["Address UI<br/>search + results + details"]
+    Client["Loqate client<br/>loqate-client.js"]
+    Storage[("Browser localStorage<br/>API key + theme")]
+    Leaflet["Leaflet map<br/>CDN library"]
+    Loqate["Loqate Find + Verify APIs"]
+    Tiles["OpenStreetMap tile service"]
 
-    subgraph API["SvelteKit API Routes"]
-        direction LR
-        C["/api/countries<br/>GET"]
-        S["/api/search<br/>GET"]
-        R["/api/retrieve<br/>GET"]
-        D["/api/docs<br/>GET"]
-        C ~~~ S ~~~ R ~~~ D
-    end
-
-    subgraph External["External Services"]
-        direction LR
-        FIND["LOQATE Find<br/>Capture Interactive<br/>Find API v1.20"]
-        VERIFY["LOQATE Verify<br/>Cleansing International<br/>Batch API v1.20"]
-        CACHE[("SQLite Cache<br/>address_cache<br/>better-sqlite3")]
-
-    end
-
-    Client --> API
-    API --> FIND
-    API --> VERIFY
-    API --> CACHE
+    Browser --> UI
+    UI --> Client
+    UI --> Storage
+    Client -->|Direct HTTPS request| Loqate
+    UI --> Leaflet
+    Leaflet -->|Map tile requests| Tiles
 ```
 
-## Component Diagram
+The app loads directly as a static page. The interface and application logic are in
+`src/app/poc-address-app.html`; the request helpers are in
+`src/app/loqate-client.js`. Leaflet is loaded from unpkg.com and OpenStreetMap
+provides map tiles. There is no frontend framework runtime, application server, API
+route, database, or build step.
 
-```mermaid
-graph LR
-    subgraph Pages
-        P[+page.svelte]
-        DOCS[docs/+page.svelte]
-    end
-
-    subgraph Components
-        MAP[Map.svelte]
-    end
-
-    subgraph Lib
-        TYPES[types.ts]
-        CACHE[cache.ts]
-    end
-
-    subgraph API
-        COUNTRIES[api/countries]
-        SEARCH[api/search]
-        RETRIEVE[api/retrieve]
-        DOCS_API[api/docs]
-    end
-
-    P --> MAP
-    P --> TYPES
-    MAP --> TYPES
-    SEARCH --> TYPES
-    RETRIEVE --> CACHE
-    DOCS --> DOCS_API
-```
-
-## Data Flow
-
-User Search → LOQATE Find → Map Markers → User Selects → Cache Check → LOQATE Verify → Formatted Address
+## Address lookup flow
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant UI as Svelte SPA
-    participant API as API Routes
-    participant L as LOQATE
-    participant DB as SQLite Cache
+    actor User
+    participant App as Browser app
+    participant Store as localStorage
+    participant Loqate as Loqate APIs
+    participant Map as Leaflet + OpenStreetMap
 
-    U->>UI: Select country + enter query
-    UI->>API: GET /api/search?country=GB&query=tf26rf
-    API->>L: Find API (recursive container drill-down)
-    L-->>API: Address results
-    API-->>UI: { results: [...] }
-    UI->>UI: Plot markers on map
-
-    U->>UI: Click address in list
-    UI->>API: GET /api/retrieve?id=...&country=GB
-    API->>DB: Check cache
-    alt Cache hit
-        DB-->>API: Cached response
-    else Cache miss
-        API->>L: Verify API (OutputAddressFormat=YES)
-        L-->>API: Verified address + AddressFormat
-        API->>DB: Store response
+    User->>App: Choose country and enter query
+    App->>Store: Read saved API key
+    alt No API key
+        App->>App: Search built-in sample addresses
+    else API key configured
+        App->>Loqate: Find address (recursive container drill-down)
+        Loqate-->>App: Address results
     end
-    API-->>UI: { match: {...} }
-    UI->>UI: Display formatted address using AddressFormat
+    App->>Map: Plot markers where coordinates are available
+    User->>Map: Click preview or expand button
+    Map-->>User: Show full-size interactive map
+    User->>App: Select result from list or map
+    alt No API key
+        App->>App: Load matching sample verification data
+    else API key configured
+        App->>Loqate: Verify selected address and request geocoding
+        Loqate-->>App: Verified address fields
+    end
+    App->>App: Format lines from AddressFormat and show fields
+    App->>Map: Center map on verified coordinates when available
 ```
 
-## API Endpoints
+The supported country list is embedded in the page. Without a key, only the included
+sample searches (`tf26rf` and `EC2M 7NH`) return data. With a key, search and
+verification requests are sent directly from the browser to Loqate. The API key
+field is in the search section.
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/countries` | GET | List of countries with flags |
-| `/api/search` | GET | Search addresses via LOQATE Find |
-| `/api/retrieve` | GET | Get verified address via LOQATE Verify |
-| `/api/docs` | GET | OpenAPI 3.0 JSON spec |
-| `/docs` | GET | Swagger UI |
+The results map is a compact 165-pixel preview, like the Asset POC. Click the
+preview or expand button to open a full-size interactive map. Result markers can
+be selected from either view; the expanded map also supports panning and zooming.
 
-## Database Schema (Cache)
+## Components
 
-```sql
-CREATE TABLE address_cache (
-    id TEXT PRIMARY KEY,      -- Address ID from LOQATE Find
-    response TEXT NOT NULL,   -- JSON blob of LOQATE Verify response
-    created_at INTEGER NOT NULL -- Unix timestamp
-);
-```
+| Component | Responsibility |
+|-----------|----------------|
+| `poc-address-app.html` | Static interface, styles, search and API key controls, map setup, sample responses, result selection, and address rendering |
+| `loqate-client.js` | Loqate Find and Verify requests, result-container drill-down, and API error handling |
+| Leaflet | Compact map preview, result markers, and expanded interactive map |
+| OpenStreetMap | Map tiles and attribution for both map views |
+| Browser `localStorage` | Stores the Loqate key under `loqate_api_key` and theme preference under `poc-address.theme.v1` |
 
-## Address Formatting
+## Address formatting
 
-The `AddressFormat` field from LOQATE defines how to construct the formatted address. It's a string with field names separated by `<BR>` tags.
+Loqate's `AddressFormat` value provides field names grouped into address lines with
+`<BR>` separators. The app splits the format into lines, resolves each field from the
+verification response, and displays non-empty values. When no format is supplied, it
+falls back to the response's `Address` field.
 
-**Example (UK):**
+## Framework and runtime
 
-```
-Organisation<BR>DeliveryAddress<BR>Locality AdministrativeArea PostalCode
-```
+The application is plain browser-native HTML, CSS, and JavaScript. It has no package
+manifest, frontend framework runtime, compile step, or server-side code. Open
+`src/app/poc-address-app.html` directly or serve the files as static assets. GitHub
+Pages publishes the app as `docs/index.html` and the standards guide as
+`docs/documentation.html`. The Loqate client is published alongside the app.
 
-**Rendering Logic:**
+## Security and limitations
 
-1. Split `AddressFormat` by `<BR>` to get lines
-2. For each line, split by whitespace to get field names
-3. Look up each field name in the LOQATE response
-4. Join non-empty values with spaces
+- The Loqate API key is saved in browser `localStorage` and sent directly from the
+  browser. This is not a production secret store.
+- The app has no authentication, server-side proxy, cache, persistent address
+  records, or user account.
+- Leaflet and OpenStreetMap require network access.
+- The built-in examples are fixed fixtures, not a local address database.
+- Map pins and geocodes do not prove postal deliverability, ownership, or legal
+  status.
 
-## Standard
-
-Uses **UPU S42** (not ISO 20022). UPU S42 is more flexible, covers more countries, and is designed for web application adaptation.
-
-## Technology Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Svelte 5 + SvelteKit 2 |
-| Map | Leaflet + OpenStreetMap |
-| API | SvelteKit server routes |
-| Cache | SQLite (better-sqlite3) |
-| API Docs | Swagger UI |
-| External | LOQATE Find + Verify APIs |
-
-## User Flow
-
-```mermaid
-flowchart TD
-    A[Page Load] --> B[Fetch Countries]
-    B --> C[Display World Map]
-    C --> D[User Selects Country]
-    D --> E[User Enters Search Query]
-    E --> F[Search API Call]
-    F --> G[Display Markers on Map]
-    G --> H[User Clicks Marker or List Item]
-    H --> I[Retrieve API Call]
-    I --> J{Cache Hit?}
-    J -->|Yes| K[Return Cached Data]
-    J -->|No| L[LOQATE Verify Call]
-    L --> M[Store in Cache]
-    M --> K
-    K --> N[Display Formatted Address]
-    N --> O[Show Verification Badges]
-    O --> P[Show All Fields]
-```
-
-
-Related: [[Loqate-api]].
+The documentation page's UPU S42 content is explanatory; the app delegates live address
+formatting and verification to Loqate rather than implementing a separate standard
+engine.
