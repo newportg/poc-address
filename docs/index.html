@@ -195,7 +195,7 @@
 
       <aside class="demo-notice" role="note">
         <span class="notice-icon" aria-hidden="true">i</span>
-        <span><strong>Demonstration app.</strong> Without an API key, the app uses built-in sample addresses. Live LOQATE requests are sent directly from this browser. The key is stored in this browser and is not protected as a production secret.</span>
+        <span><strong>Demonstration app.</strong> Without an API key, the app uses built-in sample addresses. With a key, requests go through the local address API to LOQATE. The key is stored in this browser and is not protected as a production secret.</span>
       </aside>
 
       <section id="poc-address-search">
@@ -226,7 +226,7 @@
             </label>
             <button class="button button-quiet" type="button" data-action="save-key">Save key</button>
             <span id="keyStatus" class="key-status" role="status"></span>
-            <p class="key-guidance">The key is stored in this browser and included in direct requests to LOQATE; browser storage is not a secure secret store.</p>
+            <p class="key-guidance">The key is stored in this browser and sent to the local address API; browser storage is not a secure secret store.</p>
           </div>
         </div>
 
@@ -268,6 +268,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js"></script>
 <script src="loqate-client.js"></script>
 <script>
 (() => {

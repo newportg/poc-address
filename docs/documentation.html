@@ -304,7 +304,7 @@
 
     <h3>Architecture</h3>
     <figure class="docs-diagram">
-      <svg viewBox="0 0 820 280" role="img" aria-label="The Address POC is a static HTML, CSS, and JavaScript browser app. It sends Loqate requests directly from the browser, stores the API key in localStorage, and uses Leaflet with OpenStreetMap tiles." style="width: 100%; height: auto; max-width: 820px;">
+      <svg viewBox="0 0 820 280" role="img" aria-label="The Address POC is a static HTML, CSS, and JavaScript browser app. It sends address requests through the FastAPI proxy, stores the API key in localStorage, and uses Leaflet with OpenStreetMap tiles." style="width: 100%; height: auto; max-width: 820px;">
         <defs>
           <marker id="address-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" fill="#8888a0"/>
@@ -328,7 +328,7 @@
 
         <rect x="490" y="54" width="290" height="72" rx="8" fill="#292115" stroke="#f59e0b" stroke-width="2"/>
         <text x="635" y="82" text-anchor="middle" fill="#e8e8f0" font-size="13" font-weight="600">Loqate Find + Verify APIs</text>
-        <text x="635" y="103" text-anchor="middle" fill="#8888a0" font-size="10">HTTPS requests directly from browser</text>
+        <text x="635" y="103" text-anchor="middle" fill="#8888a0" font-size="10">HTTPS requests through FastAPI proxy</text>
         <rect x="490" y="174" width="290" height="54" rx="8" fill="#20202a" stroke="#10b981" stroke-width="2"/>
         <text x="635" y="197" text-anchor="middle" fill="#e8e8f0" font-size="12" font-weight="600">OpenStreetMap tiles</text>
         <text x="635" y="214" text-anchor="middle" fill="#8888a0" font-size="9">fetched by Leaflet</text>
@@ -345,13 +345,13 @@
     <div class="flow">
       <div class="flow-step">Choose country + enter query</div>
       <div class="flow-arrow">→</div>
-      <div class="flow-step">Demo fixtures or direct Loqate Find</div>
+      <div class="flow-step">Demo fixtures or API Find</div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">Show results + map markers</div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">Select an address</div>
       <div class="flow-arrow">→</div>
-      <div class="flow-step">Demo fixture or direct Loqate Verify</div>
+      <div class="flow-step">Demo fixture or API Verify</div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">Format and display address details</div>
     </div>
@@ -360,7 +360,8 @@
     <table>
       <tr><th>Component</th><th>Responsibility</th></tr>
       <tr><td><code>poc-address-app.html</code></td><td>Static app markup, styles, UI behavior, sample search results, and sample verification responses.</td></tr>
-      <tr><td><code>loqate-client.js</code></td><td>Direct browser requests to Loqate Find and Verify, including recursive Find container drill-down.</td></tr>
+      <tr><td><code>loqate-client.js</code></td><td>Calls the local FastAPI search and retrieve endpoints and maps responses for the browser UI.</td></tr>
+      <tr><td><code>api/main.py</code></td><td>FastAPI proxy for Loqate Find and Verify, including recursive Find container drill-down.</td></tr>
       <tr><td>Leaflet + OpenStreetMap</td><td>Compact map preview, selectable result markers, expanded interactive map, and map tiles. Network access is required.</td></tr>
       <tr><td>Browser localStorage</td><td>Stores the Loqate API key and theme preference for this origin.</td></tr>
     </table>
@@ -369,13 +370,13 @@
     <p>The search results map is a compact 165-pixel preview, like the Asset POC. Click the preview or its expand button to open a full-size interactive map. Result markers remain selectable in both views; the expanded map supports panning and zooming.</p>
 
     <h3>Framework and runtime</h3>
-    <p>The app uses the same no-framework approach as the Asset POC: static HTML, CSS, and browser-native JavaScript. The Loqate API key field is in the address search section. The app has no frontend framework runtime, build step, application server, API routes, or database. Open the standalone HTML file directly or serve it as static files.</p>
-    <p>Without an API key, the app only returns its two built-in sample address searches. With a key, Find and Verify requests go directly from the browser to Loqate. The key is persisted in localStorage and is not protected as a production secret.</p>
+    <p>The app uses the same no-framework approach as the Asset POC: static HTML, CSS, and browser-native JavaScript. The Loqate API key field is in the address search section. The FastAPI proxy exposes <code>/health</code>, <code>/heartbeat</code>, <code>/api/addresses/search</code>, and <code>/api/addresses/retrieve</code>; interactive OpenAPI documentation is available at <code>/docs</code>. The proxy can run in a local Podman container.</p>
+    <p>Without an API key, the app only returns its two built-in sample address searches. With a key, the browser sends the <code>X-Loqate-Api-Key</code> header to the proxy, which forwards Find and Verify requests to Loqate. The key is persisted in localStorage and is not protected as a production secret.</p>
 
     <h3>Address formatting and standard</h3>
     <p>When available, Loqate's <code>AddressFormat</code> response determines the formatted address lines: each line identifies response fields, and non-empty values are joined for display. UPU S42 is the addressing reference used by the POC; the app does not implement a separate address standard engine.</p>
 
-    <p><strong>Limitations:</strong> there is no server-side proxy, cache, account system, or secure secret store. Map display requires Leaflet CDN and OpenStreetMap access. This demonstration does not establish address deliverability, ownership, or legal status.</p>
+    <p><strong>Limitations:</strong> the proxy has no authentication, cache, account system, or secure server-side key store. Map display requires Leaflet CDN and OpenStreetMap access. This demonstration does not establish address deliverability, ownership, or legal status.</p>
 </section>
 
 

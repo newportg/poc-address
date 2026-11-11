@@ -12,6 +12,7 @@ flowchart LR
     Browser["Static browser app<br/>HTML + CSS + JavaScript"]
     UI["Address UI<br/>search + results + details"]
     Client["Loqate client<br/>loqate-client.js"]
+    Proxy["FastAPI proxy<br/>api/main.py"]
     Storage[("Browser localStorage<br/>API key + theme")]
     Leaflet["Leaflet map<br/>CDN library"]
     Loqate["Loqate Find + Verify APIs"]
@@ -20,16 +21,17 @@ flowchart LR
     Browser --> UI
     UI --> Client
     UI --> Storage
-    Client -->|Direct HTTPS request| Loqate
+    Client -->|HTTP API request| Proxy
+    Proxy -->|HTTPS request| Loqate
     UI --> Leaflet
     Leaflet -->|Map tile requests| Tiles
 ```
 
 The app loads directly as a static page. The interface and application logic are in
 `src/poc-address-app.html`; the request helpers are in
-`src/loqate-client.js`. Leaflet is loaded from unpkg.com and OpenStreetMap
-provides map tiles. There is no frontend framework runtime, application server, API
-route, database, or build step.
+`src/loqate-client.js`; the Loqate proxy is implemented in `api/main.py`. Leaflet
+is loaded from unpkg.com and OpenStreetMap provides map tiles. There is no
+frontend framework runtime, database, or build step.
 
 ## Address lookup flow
 
@@ -37,6 +39,7 @@ route, database, or build step.
 sequenceDiagram
     actor User
     participant App as Browser app
+    participant Proxy as FastAPI proxy
     participant Store as localStorage
     participant Loqate as Loqate APIs
     participant Map as Leaflet + OpenStreetMap
@@ -46,8 +49,10 @@ sequenceDiagram
     alt No API key
         App->>App: Search built-in sample addresses
     else API key configured
-        App->>Loqate: Find address (recursive container drill-down)
-        Loqate-->>App: Address results
+        App->>Proxy: GET /api/addresses/search
+        Proxy->>Loqate: Find address (recursive container drill-down)
+        Loqate-->>Proxy: Address results
+        Proxy-->>App: Address results
     end
     App->>Map: Plot markers where coordinates are available
     User->>Map: Click preview or expand button
@@ -56,17 +61,19 @@ sequenceDiagram
     alt No API key
         App->>App: Load matching sample verification data
     else API key configured
-        App->>Loqate: Verify selected address and request geocoding
-        Loqate-->>App: Verified address fields
+        App->>Proxy: POST /api/addresses/retrieve
+        Proxy->>Loqate: Verify selected address and request geocoding
+        Loqate-->>Proxy: Verified address fields
+        Proxy-->>App: Verified address fields
     end
     App->>App: Format lines from AddressFormat and show fields
     App->>Map: Center map on verified coordinates when available
 ```
 
 The supported country list is embedded in the page. Without a key, only the included
-sample searches (`tf26rf` and `EC2M 7NH`) return data. With a key, search and
-verification requests are sent directly from the browser to Loqate. The API key
-field is in the search section.
+sample searches (`tf26rf` and `EC2M 7NH`) return data. With a key, the browser
+sends the `X-Loqate-Api-Key` header to the FastAPI proxy, which calls Loqate. The
+API key field is in the search section.
 
 The results map is a compact 165-pixel preview, like the Asset POC. Click the
 preview or expand button to open a full-size interactive map. Result markers can
@@ -77,7 +84,8 @@ be selected from either view; the expanded map also supports panning and zooming
 | Component | Responsibility |
 |-----------|----------------|
 | `poc-address-app.html` | Static interface, styles, search and API key controls, map setup, sample responses, result selection, and address rendering |
-| `loqate-client.js` | Loqate Find and Verify requests, result-container drill-down, and API error handling |
+| `loqate-client.js` | Calls the local FastAPI address endpoints for search and verification |
+| `api/main.py` | FastAPI proxy for Loqate Find and Verify, including recursive Find container drill-down |
 | Leaflet | Compact map preview, result markers, and expanded interactive map |
 | OpenStreetMap | Map tiles and attribution for both map views |
 | Browser `localStorage` | Stores the Loqate key under `loqate_api_key` and theme preference under `poc-address.theme.v1` |
@@ -92,17 +100,19 @@ falls back to the response's `Address` field.
 ## Framework and runtime
 
 The application is plain browser-native HTML, CSS, and JavaScript. It has no package
-manifest, frontend framework runtime, compile step, or server-side code. Open
-`src/poc-address-app.html` directly or serve the files as static assets. GitHub
-Pages publishes the app as `docs/index.html` and the standards guide as
-`docs/documentation.html`. The Loqate client is published alongside the app.
+manifest, frontend framework runtime, or compile step. The FastAPI proxy exposes
+`/health`, `/heartbeat`, `/api/addresses/search`, and `/api/addresses/retrieve`;
+FastAPI publishes interactive documentation at `/docs`. The local Podman runner
+builds `api/Containerfile`, starts the proxy, and serves the browser client.
+GitHub Pages publishes the app as `docs/index.html` and the standards guide as
+`docs/documentation.html`.
 
 ## Security and limitations
 
-- The Loqate API key is saved in browser `localStorage` and sent directly from the
-  browser. This is not a production secret store.
-- The app has no authentication, server-side proxy, cache, persistent address
-  records, or user account.
+- The Loqate API key is saved in browser `localStorage` and sent to the proxy in
+  `X-Loqate-Api-Key`. This is not a production secret store.
+- The app and proxy have no authentication, cache, persistent address records, or
+  user account.
 - Leaflet and OpenStreetMap require network access.
 - The built-in examples are fixed fixtures, not a local address database.
 - Map pins and geocodes do not prove postal deliverability, ownership, or legal

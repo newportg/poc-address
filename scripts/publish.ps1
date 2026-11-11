@@ -7,6 +7,7 @@
   - The POC design section is inserted from src/design-tab.html.
   - docs/index.html is the primary app; docs/documentation.html contains the guide.
   - docs/documentation.css styles the guide to match POC Asset.
+  - docs/config.js configures the browser client API base URL.
 .EXAMPLE
   powershell -File scripts/publish.ps1
 #>
@@ -148,6 +149,7 @@ $appHtml = Get-Content (Join-Path $appSource 'poc-address-app.html') -Raw -Encod
 $rootApp = $appHtml.Replace('../docs/documentation.html', './documentation.html')
 Set-Content (Join-Path $out 'index.html') $rootApp -NoNewline -Encoding UTF8
 Copy-Item (Join-Path $appSource 'loqate-client.js') (Join-Path $out 'loqate-client.js')
+Copy-Item (Join-Path $appSource 'config.js') (Join-Path $out 'config.js')
 
 # Stage for GitHub Pages (served from /docs on the repo root)
 New-Item -ItemType File -Force (Join-Path $out '.nojekyll') | Out-Null
