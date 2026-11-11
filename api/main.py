@@ -11,6 +11,14 @@ FIND_URL = "https://api.addressy.com/Capture/Interactive/Find/v1.20/json6.ws"
 VERIFY_URL = "https://api.addressy.com/Cleansing/International/Batch/v1.20/json6.ws"
 
 
+def loqate_client_options() -> dict[str, object]:
+    options: dict[str, object] = {"timeout": 15.0}
+    ca_bundle = os.getenv("LOQATE_CA_BUNDLE")
+    if ca_bundle:
+        options["verify"] = ca_bundle
+    return options
+
+
 class AddressSearchItem(BaseModel):
     id: str
     text: str
@@ -88,7 +96,7 @@ def response_items(data: Any) -> list[dict[str, Any]]:
 
 async def loqate_get(params: dict[str, str]) -> list[dict[str, Any]]:
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(**loqate_client_options()) as client:
             response = await client.get(
                 FIND_URL,
                 params=params,
@@ -192,7 +200,7 @@ async def retrieve_address(
         },
     }
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(**loqate_client_options()) as client:
             response = await client.post(
                 VERIFY_URL,
                 json=payload,

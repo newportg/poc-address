@@ -25,7 +25,7 @@ international-addressing guide. The current implementation is also described in
 
 ## Run the local API with Podman
 
-Install Podman Desktop and Python, then run:
+Install Podman Desktop and Node.js, then run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1
@@ -34,6 +34,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1
 The script builds and starts the FastAPI container, serves the generated client,
 and opens the app. The API's interactive OpenAPI page is at
 `http://127.0.0.1:8001/docs`.
+
+The runner carries a trusted Windows Zscaler root certificate into the container
+when one is installed. For another corporate certificate, provide it explicitly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1 -CaCertificatePath C:\path\company-root.cer
+```
 
 ## Publish the app and documentation
 
