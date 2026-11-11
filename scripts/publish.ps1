@@ -2,10 +2,11 @@
 .SYNOPSIS
   Publishes Address Explorer and its documentation into docs/.
 .DESCRIPTION
-  - Content tabs are built from the Address knowledge-vault notes.
+  - Documentation sections are built from the Address knowledge-vault notes.
   - docs/design.md is copied from the Address POC design note.
-  - The design tab is inserted from src/standards/design-tab.html.
-  - docs/index.html is the primary app; docs/documentation.html contains the reference tabs.
+  - The POC design section is inserted from src/standards/design-tab.html.
+  - docs/index.html is the primary app; docs/documentation.html contains the guide.
+  - docs/documentation.css styles the guide to match POC Asset.
 .EXAMPLE
   powershell -File scripts/publish.ps1
 #>
@@ -70,7 +71,7 @@ function Convert-WikiPage {
 
     # Unordered list
     if ($line -match '^[-*]\s+') {
-      $html.Add('    <ul style="color: var(--text-dim); padding-left: 1.5rem;">')
+      $html.Add('    <ul class="docs-list">')
       while ($i -lt $lines.Count -and $lines[$i] -match '^[-*]\s+(.*)') {
         $html.Add("      <li>$(Format-Inline $matches[1])</li>"); $i++
       }
@@ -80,7 +81,7 @@ function Convert-WikiPage {
 
     # Ordered list
     if ($line -match '^\d+\.\s+') {
-      $html.Add('    <ol style="color: var(--text-dim); padding-left: 1.5rem;">')
+      $html.Add('    <ol class="docs-list">')
       while ($i -lt $lines.Count -and $lines[$i] -match '^\d+\.\s+(.*)') {
         $html.Add("      <li>$(Format-Inline $matches[1])</li>"); $i++
       }
@@ -107,37 +108,21 @@ function Format-Inline {
   return $t
 }
 
-function Tab-Block {
-  param([string]$Comment, [string]$Id, [string]$Icon, [string]$Bg, [string]$Title, [string]$Subtitle, [string]$Inner, [switch]$Active)
-  $activeCls = if ($Active) { ' active' } else { '' }
-  $tpl = '<!-- ' + $Comment + ' -->' + "`n" +
-         '<div class="tab-content' + $activeCls + '" id="' + $Id + '">' + "`n" +
-         '  <div class="card">' + "`n" +
-         '    <div class="card-header">' + "`n" +
-         '      <div class="card-icon" style="background: ' + $Bg + ';">' + $Icon + '</div>' + "`n" +
-         '      <div>' + "`n" +
-         '        <h3 style="margin: 0;">' + $Title + '</h3>' + "`n" +
-         '        <p style="margin: 0;">' + $Subtitle + '</p>' + "`n" +
-         '      </div>' + "`n" +
-         '    </div>' + "`n`n" +
+function Docs-Section {
+  param([string]$Id, [string]$Kicker, [string]$Title, [string]$Inner)
+  $tpl = '<section class="docs-section panel" id="' + $Id + '">' + "`n" +
+         '  <div class="section-kicker">' + $Kicker + '</div>' + "`n" +
+         '  <h2>' + $Title + '</h2>' + "`n" +
          $Inner + "`n" +
-         '  </div>' + "`n" +
-         '</div>' + "`n`n"
+         '</section>' + "`n`n"
   return $tpl
 }
 
-$io = [char]::ConvertFromUtf32(0x1F4CB)  # ðŸ“‹
-$upuIcon = [char]::ConvertFromUtf32(0x1F4EE) # ðŸ“®
-$isoIcon = [char]::ConvertFromUtf32(0x1F4B0) # ðŸ’°
-$ukIcon = [char]::ConvertFromUtf32(0x1F1EC) + [char]::ConvertFromUtf32(0x1F1E7) # ðŸ‡¬ðŸ‡§
-$apiIcon = [char]::ConvertFromUtf32(0x1F50C)  # plug
-$ovTitle = 'Two Standards, Two Purposes'
-
-$overview = Tab-Block 'Overview Tab'  'overview' $io   'rgba(99,102,241,0.2)'   $ovTitle 'Comparison of UPU S42 and ISO 20022 for global address management' (Convert-WikiPage (Join-Path $wiki 'Overview.md')) -Active
-$upu      = Tab-Block 'UPU S42 Tab'   'upu'      $upuIcon 'rgba(99,102,241,0.2)'   'UPU S42 Addressing Standard' 'Universal Postal Union framework for postal addressing' (Convert-WikiPage (Join-Path $wiki 'UPU-S42.md'))
-$iso      = Tab-Block 'ISO 20022 Tab' 'iso'      $isoIcon 'rgba(139,92,246,0.2)'   'ISO 20022 Address Schema' 'Financial messaging standard for transaction data' (Convert-WikiPage (Join-Path $wiki 'ISO-20022.md'))
-$uk       = Tab-Block 'UK Format Tab' 'uk'       $ukIcon  'rgba(16,185,129,0.2)'   'UK Address Format' 'As described by UPU S42 (uses 9 of 15 elements)' (Convert-WikiPage (Join-Path $wiki 'UK-Address-Format.md'))
-$api      = Tab-Block 'LOQATE API Tab' 'api'     $apiIcon 'rgba(245,158,11,0.2)'   'LOQATE API Integration' 'Reference implementation for address verification' (Convert-WikiPage (Join-Path $wiki 'Loqate-api.md'))
+$overview = Docs-Section 'overview' 'OVERVIEW' 'International Addressing Standards' (Convert-WikiPage (Join-Path $wiki 'Overview.md'))
+$upu      = Docs-Section 'upu-s42' 'UPU S42' 'UPU S42 Addressing Standard' (Convert-WikiPage (Join-Path $wiki 'UPU-S42.md'))
+$iso      = Docs-Section 'iso-20022' 'ISO 20022' 'ISO 20022 Address Schema' (Convert-WikiPage (Join-Path $wiki 'ISO-20022.md'))
+$uk       = Docs-Section 'uk-format' 'UK FORMAT' 'UK Address Format' (Convert-WikiPage (Join-Path $wiki 'UK-Address-Format.md'))
+$api      = Docs-Section 'loqate-api' 'LOQATE API' 'LOQATE API Integration' (Convert-WikiPage (Join-Path $wiki 'Loqate-api.md'))
 $design   = Get-Content (Join-Path $repoRoot 'src\standards\design-tab.html') -Raw -Encoding UTF8
 
 $page = $tmpl
@@ -150,6 +135,7 @@ $page = $page.Replace('{{DESIGN}}',   $design)
 
 New-Item -ItemType Directory -Force $out | Out-Null
 Set-Content (Join-Path $out 'documentation.html') $page -NoNewline -Encoding UTF8
+Copy-Item -LiteralPath (Join-Path $repoRoot 'src\standards\documentation.css') -Destination (Join-Path $out 'documentation.css')
 Write-Host "Wrote $(Join-Path $out 'documentation.html')"
 
 # Publish the production design note from its knowledge-vault source.

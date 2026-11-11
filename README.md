@@ -34,7 +34,8 @@ The script reads the Address vault notes and sources under `src\standards\`, the
 generates the GitHub Pages site under `docs\`:
 
 - `docs\index.html` — primary Address Explorer app with a Documentation button
-- `docs\documentation.html` — international-addressing reference and design tabs
+- `docs\documentation.html` — international-addressing guide
+- `docs\documentation.css` — guide styles matching the Asset documentation page
 - `docs\loqate-client.js` — browser-side Loqate client for the home page
 - `docs\design.md` — copy of the current POC design note in the Address vault project
 
@@ -54,7 +55,7 @@ under **Settings → Pages**.
 ## Project layout
 
 - `src\app\` — standalone browser app and Loqate client.
-- `src\standards\` — documentation-page template and design tab.
+- `src\standards\` — documentation template, styles, and design section.
 - `scripts\` — publishing script.
 - `docs\` — generated app, documentation, and published design note.
 

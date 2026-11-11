@@ -1,16 +1,10 @@
-<!-- POC Design Tab -->
-<div class="tab-content" id="design">
-  <div class="card">
-    <div class="card-header">
-      <div class="card-icon" style="background: rgba(99,102,241,0.2);">🏗️</div>
-      <div>
-        <h3 style="margin: 0;">POC Address Application Design</h3>
-        <p style="margin: 0;">Current browser-native implementation</p>
-      </div>
-    </div>
+<section class="docs-section panel" id="design">
+    <div class="section-kicker">POC DESIGN</div>
+    <h2>POC Address Application Design</h2>
+    <p>Current browser-native implementation.</p>
 
     <h3>Architecture</h3>
-    <div class="card" style="background: var(--code-bg); padding: 1rem;">
+    <figure class="docs-diagram">
       <svg viewBox="0 0 820 280" role="img" aria-label="The Address POC is a static HTML, CSS, and JavaScript browser app. It sends Loqate requests directly from the browser, stores the API key in localStorage, and uses Leaflet with OpenStreetMap tiles." style="width: 100%; height: auto; max-width: 820px;">
         <defs>
           <marker id="address-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -45,7 +39,8 @@
         <line x1="366" y1="201" x2="480" y2="201" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
         <line x1="117" y1="144" x2="117" y2="164" stroke="#8888a0" stroke-width="2" marker-end="url(#address-arrow)"/>
       </svg>
-    </div>
+      <figcaption>The app runs in the browser; live Loqate requests and map tiles require network access.</figcaption>
+    </figure>
 
     <h3>Address lookup flow</h3>
     <div class="flow">
@@ -82,5 +77,4 @@
     <p>When available, Loqate's <code>AddressFormat</code> response determines the formatted address lines: each line identifies response fields, and non-empty values are joined for display. UPU S42 is the addressing reference used by the POC; the app does not implement a separate address standard engine.</p>
 
     <p><strong>Limitations:</strong> there is no server-side proxy, cache, account system, or secure secret store. Map display requires Leaflet CDN and OpenStreetMap access. This demonstration does not establish address deliverability, ownership, or legal status.</p>
-  </div>
-</div>
+</section>
