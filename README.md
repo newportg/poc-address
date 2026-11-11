@@ -13,7 +13,7 @@ knowledge vault: `C:\Source\Obsidian\Projects\POC-Documentation\POC-Documentatio
 Open the standalone app in a browser:
 
 ```powershell
-Start-Process src\app\poc-address-app.html
+Start-Process src\poc-address-app.html
 ```
 
 No build step or dependency installation is required to run the app. Leaflet is
@@ -30,7 +30,7 @@ From the repository root, run:
 powershell -ExecutionPolicy Bypass -File .\scripts\publish.ps1
 ```
 
-The script reads the Address vault notes and sources under `src\standards\`, then
+The script reads the Address vault notes and sources under `src\`, then
 generates the GitHub Pages site under `docs\`:
 
 - `docs\index.html` — primary Address Explorer app with a Documentation button
@@ -54,11 +54,10 @@ under **Settings → Pages**.
 
 ## Project layout
 
-- `src\app\` — standalone browser app and Loqate client.
-- `src\standards\` — documentation template, styles, and design section.
+- `src\` — standalone browser app, Loqate client, and documentation sources.
 - `scripts\` — publishing script.
 - `docs\` — generated app, documentation, and published design note.
 
 The Loqate API key is entered in the app and stored in browser `localStorage`.
 This client-side proof of concept is not a production secret store. Live Loqate
-requests are isolated in `src\app\loqate-client.js`.
+requests are isolated in `src\loqate-client.js`.

@@ -4,7 +4,7 @@
 .DESCRIPTION
   - Documentation sections are built from the Address knowledge-vault notes.
   - docs/design.md is copied from the Address POC design note.
-  - The POC design section is inserted from src/standards/design-tab.html.
+  - The POC design section is inserted from src/design-tab.html.
   - docs/index.html is the primary app; docs/documentation.html contains the guide.
   - docs/documentation.css styles the guide to match POC Asset.
 .EXAMPLE
@@ -22,7 +22,7 @@ if ([string]::IsNullOrWhiteSpace($VaultProjectPath)) {
 }
 $wiki   = (Resolve-Path -LiteralPath $VaultProjectPath).Path
 $out    = Join-Path $repoRoot 'docs'
-$tmpl   = Get-Content (Join-Path $repoRoot 'src\standards\template.html') -Raw -Encoding UTF8
+$tmpl   = Get-Content (Join-Path $repoRoot 'src\template.html') -Raw -Encoding UTF8
 
 function Convert-WikiPage {
   param([string]$Path)
@@ -123,7 +123,7 @@ $upu      = Docs-Section 'upu-s42' 'UPU S42' 'UPU S42 Addressing Standard' (Conv
 $iso      = Docs-Section 'iso-20022' 'ISO 20022' 'ISO 20022 Address Schema' (Convert-WikiPage (Join-Path $wiki 'ISO-20022.md'))
 $uk       = Docs-Section 'uk-format' 'UK FORMAT' 'UK Address Format' (Convert-WikiPage (Join-Path $wiki 'UK-Address-Format.md'))
 $api      = Docs-Section 'loqate-api' 'LOQATE API' 'LOQATE API Integration' (Convert-WikiPage (Join-Path $wiki 'Loqate-api.md'))
-$design   = Get-Content (Join-Path $repoRoot 'src\standards\design-tab.html') -Raw -Encoding UTF8
+$design   = Get-Content (Join-Path $repoRoot 'src\design-tab.html') -Raw -Encoding UTF8
 
 $page = $tmpl
 $page = $page.Replace('{{OVERVIEW}}', $overview)
@@ -135,17 +135,17 @@ $page = $page.Replace('{{DESIGN}}',   $design)
 
 New-Item -ItemType Directory -Force $out | Out-Null
 Set-Content (Join-Path $out 'documentation.html') $page -NoNewline -Encoding UTF8
-Copy-Item -LiteralPath (Join-Path $repoRoot 'src\standards\documentation.css') -Destination (Join-Path $out 'documentation.css')
+Copy-Item -LiteralPath (Join-Path $repoRoot 'src\documentation.css') -Destination (Join-Path $out 'documentation.css')
 Write-Host "Wrote $(Join-Path $out 'documentation.html')"
 
 # Publish the production design note from its knowledge-vault source.
 Copy-Item -LiteralPath (Join-Path $wiki 'Poc-Design.md') -Destination (Join-Path $out 'design.md')
 Write-Host "Copied production design from $wiki"
 
-$appSource = Join-Path $repoRoot 'src\app'
+$appSource = Join-Path $repoRoot 'src'
 $appHtml = Get-Content (Join-Path $appSource 'poc-address-app.html') -Raw -Encoding UTF8
 
-$rootApp = $appHtml.Replace('../../docs/documentation.html', './documentation.html')
+$rootApp = $appHtml.Replace('../docs/documentation.html', './documentation.html')
 Set-Content (Join-Path $out 'index.html') $rootApp -NoNewline -Encoding UTF8
 Copy-Item (Join-Path $appSource 'loqate-client.js') (Join-Path $out 'loqate-client.js')
 

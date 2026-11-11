@@ -26,8 +26,8 @@ flowchart LR
 ```
 
 The app loads directly as a static page. The interface and application logic are in
-`src/app/poc-address-app.html`; the request helpers are in
-`src/app/loqate-client.js`. Leaflet is loaded from unpkg.com and OpenStreetMap
+`src/poc-address-app.html`; the request helpers are in
+`src/loqate-client.js`. Leaflet is loaded from unpkg.com and OpenStreetMap
 provides map tiles. There is no frontend framework runtime, application server, API
 route, database, or build step.
 
@@ -93,7 +93,7 @@ falls back to the response's `Address` field.
 
 The application is plain browser-native HTML, CSS, and JavaScript. It has no package
 manifest, frontend framework runtime, compile step, or server-side code. Open
-`src/app/poc-address-app.html` directly or serve the files as static assets. GitHub
+`src/poc-address-app.html` directly or serve the files as static assets. GitHub
 Pages publishes the app as `docs/index.html` and the standards guide as
 `docs/documentation.html`. The Loqate client is published alongside the app.
 
