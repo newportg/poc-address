@@ -90,6 +90,12 @@
 #poc-address-app[data-theme="light"] .field { color: #48495e; }
 #poc-address-app .field input,
 #poc-address-app .field select { width: 100%; min-width: 0; height: 37px; padding: 0 10px; border: 1px solid #343443; border-radius: 7px; background: #0f0f17; color: var(--address-text); font-size: 11px; }
+#poc-address-app .secret-input { position: relative; display: block; }
+#poc-address-app .secret-input input { padding-right: 38px; }
+#poc-address-app .reveal-button { position: absolute; top: 50%; right: 6px; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 5px; background: transparent; color: #85849a; cursor: pointer; transform: translateY(-50%); }
+#poc-address-app .reveal-button:hover { background: #242431; color: #d7d5e5; }
+#poc-address-app .reveal-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+#poc-address-app[data-theme="light"] .reveal-button:hover { background: #ececf5; color: #34344f; }
 #poc-address-app[data-theme="light"] .field input,
 #poc-address-app[data-theme="light"] .field select { border-color: #d5d6e0; background: white; color: #292a40; }
 #poc-address-app .workspace { display: grid; grid-template-columns: minmax(260px,335px) minmax(0,1fr); align-items: start; gap: 15px; }
@@ -222,7 +228,12 @@
           <button class="button button-primary" type="button" data-action="search">Search addresses</button>
           <div class="search-key-row">
             <label class="field" for="apiKey">LOQATE API key
-              <input type="password" id="apiKey" autocomplete="new-password" placeholder="Enter API key">
+              <span class="secret-input">
+                <input type="password" id="apiKey" autocomplete="new-password" placeholder="Enter API key">
+                <button class="reveal-button" type="button" data-reveal-target="apiKey" aria-label="Show API key" title="Show API key">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.5-6 9.8-6 9.8 6 9.8 6-3.5 6-9.8 6-9.8-6-9.8-6Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
+                </button>
+              </span>
             </label>
             <button class="button button-quiet" type="button" data-action="save-key">Save key</button>
             <span id="keyStatus" class="key-status" role="status"></span>
@@ -324,6 +335,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initMap();
   setupTheme();
   loadKey();
+  document.querySelectorAll('[data-reveal-target]').forEach(button => {
+    const input = get('#' + button.dataset.revealTarget);
+    button.addEventListener('click', () => {
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      button.setAttribute('aria-label', showing ? 'Show API key' : 'Hide API key');
+      button.title = showing ? 'Show API key' : 'Hide API key';
+    });
+  });
   get('[data-action="search"]').addEventListener('click', search);
   get('[data-action="save-key"]').addEventListener('click', saveKey);
   get('[data-action="expand-map"]').addEventListener('click', openFullMap);
