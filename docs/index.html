@@ -111,6 +111,22 @@
 #poc-address-app .results li.selected { border-color: #6e68f35e; background: linear-gradient(100deg,#6e68f322,#8e62e90a); box-shadow: inset 2px 0 #7f74fa; }
 #poc-address-app .results li.results-empty { padding: 28px 14px; color: var(--address-muted); text-align: center; font-size: 11px; cursor: default; }
 #poc-address-app .results li.results-empty:hover { background: transparent; }
+#poc-address-app .catalogue-panel { margin-top: 15px; }
+#poc-address-app .catalogue-controls { padding: 12px 15px; display: grid; grid-template-columns: minmax(0,1fr) 120px auto; gap: 8px; border-bottom: 1px solid #222230; }
+#poc-address-app[data-theme="light"] .catalogue-controls { border-color: #e8e9f0; }
+#poc-address-app .catalogue-controls input,
+#poc-address-app .catalogue-controls select { min-width: 0; height: 34px; padding: 0 9px; border: 1px solid #343443; border-radius: 7px; background: #0f0f17; color: var(--address-text); font-size: 11px; }
+#poc-address-app[data-theme="light"] .catalogue-controls input,
+#poc-address-app[data-theme="light"] .catalogue-controls select { border-color: #d5d6e0; background: white; color: #292a40; }
+#poc-address-app .catalogue-list { max-height: 260px; margin: 0; padding: 8px; overflow-y: auto; list-style: none; }
+#poc-address-app .catalogue-list li { margin-bottom: 6px; padding: 10px 12px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; }
+#poc-address-app .catalogue-list li:hover { background: #1b1b27; border-color: #6e68f35e; }
+#poc-address-app .catalogue-list strong { display: block; color: #e1e0e9; font-size: 11px; }
+#poc-address-app[data-theme="light"] .catalogue-list strong { color: #34344f; }
+#poc-address-app .catalogue-list small { display: block; margin-top: 3px; color: #85849a; font-size: 10px; }
+#poc-address-app .catalogue-empty { padding: 22px 14px !important; color: var(--address-muted); text-align: center; font-size: 11px; cursor: default !important; }
+#poc-address-app .catalogue-empty:hover { border-color: transparent !important; background: transparent !important; }
+#poc-address-app .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 #poc-address-app .result-text { color: #e1e0e9; font-size: 11px; font-weight: 620; }
 #poc-address-app[data-theme="light"] .result-text { color: #34344f; }
 #poc-address-app .result-description { margin-top: 4px; color: #85849a; font-size: 10px; }
@@ -261,6 +277,36 @@
             <div id="detail" class="detail-panel" style="display: none;"></div>
           </div>
         </div>
+        <section class="panel catalogue-panel" aria-labelledby="catalogue-heading">
+          <div class="panel-heading">
+            <div><div class="section-kicker">VERIFIED ADDRESSES</div><h2 id="catalogue-heading">Address catalogue</h2></div>
+            <span class="count-pill" id="catalogue-count">0 records</span>
+          </div>
+          <div class="catalogue-controls">
+            <label class="sr-only" for="catalogue-query">Filter address catalogue</label>
+            <input id="catalogue-query" type="search" placeholder="Search address catalogue…" autocomplete="off">
+            <label class="sr-only" for="catalogue-country">Filter catalogue by country</label>
+            <select id="catalogue-country">
+              <option value="">All countries</option>
+              <option value="GB">United Kingdom</option>
+              <option value="US">United States</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="ES">Spain</option>
+              <option value="IT">Italy</option>
+              <option value="NL">Netherlands</option>
+              <option value="BE">Belgium</option>
+              <option value="IE">Ireland</option>
+              <option value="PT">Portugal</option>
+              <option value="AU">Australia</option>
+              <option value="CA">Canada</option>
+            </select>
+            <button class="button button-quiet" type="button" data-action="load-catalog">Refresh</button>
+          </div>
+          <ul id="catalogue-list" class="catalogue-list" aria-label="Verified address catalogue">
+            <li class="catalogue-empty">Save a Loqate API key and refresh to load verified addresses.</li>
+          </ul>
+        </section>
       </section>
 
       <footer class="page-footer">
@@ -298,6 +344,7 @@ let map;
 let fullMap;
 let markers = [];
 let searchResults = [];
+let catalogRecords = [];
 let apiKey = localStorage.getItem('loqate_api_key') || '';
 const MAP_OVERVIEW = [20, 0];
 
@@ -346,6 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   get('[data-action="search"]').addEventListener('click', search);
   get('[data-action="save-key"]').addEventListener('click', saveKey);
+  get('[data-action="load-catalog"]').addEventListener('click', loadCatalog);
+  get('#catalogue-query').addEventListener('input', renderCatalog);
+  get('#catalogue-country').addEventListener('change', renderCatalog);
   get('[data-action="expand-map"]').addEventListener('click', openFullMap);
   get('[data-action="close-map"]').addEventListener('click', () => get('#map-dialog').close());
   get('#map-dialog').addEventListener('click', event => {
@@ -413,6 +463,7 @@ function loadKey() {
   if (apiKey) {
     get('#apiKey').value = apiKey;
     get('#keyStatus').textContent = '✓ API key configured';
+    loadCatalog();
   }
 }
 
@@ -420,6 +471,73 @@ function saveKey() {
   apiKey = get('#apiKey').value.trim();
   localStorage.setItem('loqate_api_key', apiKey);
   get('#keyStatus').textContent = apiKey ? '✓ API key saved' : 'No API key set (demo mode)';
+  if (apiKey) loadCatalog();
+}
+
+async function loadCatalog() {
+  if (!apiKey) {
+    renderCatalogMessage('Save a Loqate API key to load the address catalogue.');
+    return;
+  }
+  const count = get('#catalogue-count');
+  count.textContent = 'Loading…';
+  try {
+    catalogRecords = await LoqateClient.catalog(apiKey);
+    renderCatalog();
+  } catch (err) {
+    catalogRecords = [];
+    renderCatalogMessage('Could not load the address catalogue.');
+    showError('Catalogue failed: ' + err.message);
+  }
+}
+
+function renderCatalogMessage(message) {
+  get('#catalogue-count').textContent = '0 records';
+  get('#catalogue-list').innerHTML = '';
+  const empty = document.createElement('li');
+  empty.className = 'catalogue-empty';
+  empty.textContent = message;
+  get('#catalogue-list').appendChild(empty);
+}
+
+function renderCatalog() {
+  const query = get('#catalogue-query').value;
+  const country = get('#catalogue-country').value;
+  const records = LoqateClient.filterCatalog(catalogRecords, query, country);
+  get('#catalogue-count').textContent = records.length + (records.length === 1 ? ' record' : ' records');
+  const list = get('#catalogue-list');
+  list.innerHTML = '';
+  if (!records.length) {
+    renderCatalogMessage(catalogRecords.length ? 'No catalogue addresses match these filters.' : 'No verified addresses have been cached yet.');
+    return;
+  }
+  records.forEach(record => {
+    const item = document.createElement('li');
+    item.tabIndex = 0;
+    const title = document.createElement('strong');
+    title.textContent = record.text || record.details?.Address || record.id;
+    const meta = document.createElement('small');
+    meta.textContent = [record.description, record.country, record.id].filter(Boolean).join(' · ');
+    item.append(title, meta);
+    item.addEventListener('click', () => {
+      const result = {
+        id: record.id,
+        text: record.text || record.details?.Address || record.id,
+        description: record.description || ''
+      };
+      clearMarkers();
+      searchResults = [result];
+      map.setView(MAP_OVERVIEW, 2);
+      showAddressDetails(result, item, record.details || {});
+    });
+    item.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        item.click();
+      }
+    });
+    list.appendChild(item);
+  });
 }
 
 function showError(msg) {
@@ -591,21 +709,26 @@ async function selectResult(result, element) {
     } else {
       data = demoRetrieve(result);
     }
-    displayDetail(data);
-    const coords = getCoordinates(data);
-    if (coords) {
-      if (result._marker) {
-        result._marker.setLatLng(coords);
-        result._marker.setOpacity(1);
-      } else {
-        addResultMarker(result, element, coords);
-      }
-      result._coords = coords;
-      map.setView(coords, 17);
-      result._marker.openPopup();
-    }
+    showAddressDetails(result, element, data);
   } catch (err) {
     detail.innerHTML = '<div class="error">Failed to load details: ' + err.message + '</div>';
+  }
+}
+
+function showAddressDetails(result, element, data) {
+  get('#detail').style.display = 'block';
+  displayDetail(data);
+  const coords = getCoordinates(data);
+  if (coords) {
+    if (result._marker) {
+      result._marker.setLatLng(coords);
+      result._marker.setOpacity(1);
+    } else {
+      addResultMarker(result, element, coords);
+    }
+    result._coords = coords;
+    map.setView(coords, 17);
+    result._marker.openPopup();
   }
 }
 

@@ -43,6 +43,9 @@ class FakeAsyncClient:
 
 class LoqateApiTests(unittest.TestCase):
     def setUp(self) -> None:
+        main._search_cache.clear()
+        main._retrieve_cache.clear()
+        main._catalog.clear()
         FakeAsyncClient.response = FakeResponse(200, {"Items": [{
             "Type": "Address",
             "Id": "GB|1",
@@ -74,10 +77,34 @@ class LoqateApiTests(unittest.TestCase):
         self.assertEqual(result, {"Address": "1 High Street"})
         self.assertEqual(FakeAsyncClient.requests[0]["json"]["Key"], "client-key")
 
+    def test_repeated_search_uses_cache(self) -> None:
+        asyncio.run(main.search_addresses("ACME", "GB", "client-key"))
+        asyncio.run(main.search_addresses("ACME", "GB", "client-key"))
+        self.assertEqual(len(FakeAsyncClient.requests), 1)
+
+    def test_catalog_contains_verified_addresses_and_can_filter_by_country(self) -> None:
+        FakeAsyncClient.response = FakeResponse(200, {"Items": [{"Matches": [{"Address": "1 High Street"}]}]})
+        asyncio.run(main.retrieve_address(
+            main.AddressRetrieveRequest(id="GB|1", text="1 High Street", country="gb"),
+            "client-key",
+        ))
+        result = asyncio.run(main.retrieve_catalog("client-key", "GB"))
+        self.assertEqual(result.model_dump(), {
+            "items": [{
+                "id": "GB|1",
+                "text": "1 High Street",
+                "description": "",
+                "country": "GB",
+                "details": {"Address": "1 High Street"},
+            }]
+        })
+        self.assertEqual(asyncio.run(main.retrieve_catalog("client-key", "US")).items, [])
+
     def test_openapi_exposes_key_header_and_both_endpoints(self) -> None:
         schema = main.app.openapi()
         self.assertIn("/api/addresses/search", schema["paths"])
         self.assertIn("/api/addresses/retrieve", schema["paths"])
+        self.assertIn("/api/addresses/catalog", schema["paths"])
         headers = schema["paths"]["/api/addresses/search"]["get"]["parameters"]
         self.assertEqual(
             [parameter["name"] for parameter in headers if parameter["in"] == "header"],

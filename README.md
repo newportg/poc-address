@@ -85,4 +85,8 @@ The Loqate API key is entered in the app and stored in browser `localStorage`,
 then sent to the API in the `X-Loqate-Api-Key` header. The key is not stored by
 the proxy and this remains a proof-of-concept, not a production secret store.
 The browser client is in `src\loqate-client.js`; the Loqate calls are in
-`api\main.py`.
+`api\main.py`. Search and verification results are cached in memory for five
+minutes by default (`ADDRESS_CACHE_TTL_SECONDS` configures this). Verified
+addresses are available through `GET /api/addresses/catalog`; the client exposes
+`LoqateClient.catalog()` and `LoqateClient.filterCatalog()` for catalogue
+retrieval and Party-style local filtering.

@@ -55,5 +55,22 @@ window.LoqateClient = (() => {
     return data;
   }
 
-  return { search, retrieve };
+  async function catalog(apiKey, country = '') {
+    const url = new URL(apiUrl('/api/addresses/catalog'), window.location.href);
+    if (country) url.searchParams.set('country', country);
+    const data = await request(url, { headers: headers(apiKey) });
+    return Array.isArray(data.items) ? data.items : [];
+  }
+
+  function filterCatalog(addresses, query = '', country = '') {
+    const needle = query.trim().toLocaleLowerCase();
+    const countryCode = country.trim().toLocaleUpperCase();
+    return (Array.isArray(addresses) ? addresses : []).filter(address => {
+      const searchable = JSON.stringify(address).toLocaleLowerCase();
+      return (!needle || searchable.includes(needle)) &&
+        (!countryCode || String(address.country || '').toLocaleUpperCase() === countryCode);
+    });
+  }
+
+  return { search, retrieve, catalog, filterCatalog };
 })();
