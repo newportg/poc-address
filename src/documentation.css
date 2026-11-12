@@ -24,6 +24,7 @@ html {
 body {
   min-width: 320px;
   margin: 0;
+  overflow: hidden;
   color: var(--text);
   background:
     radial-gradient(ellipse at 50% -25%, rgba(99, 102, 241, 0.13), transparent 55%),
@@ -46,6 +47,9 @@ a:hover {
 }
 
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   height: 74px;
   padding: 0 clamp(20px, 5vw, 76px);
   display: flex;
@@ -130,8 +134,11 @@ a:hover {
 
 .docs-main {
   width: min(100%, 1120px);
+  height: calc(100vh - 74px);
   margin: 0 auto;
   padding: 44px clamp(20px, 5vw, 76px) 28px;
+  display: flex;
+  flex-direction: column;
 }
 
 .docs-intro {
@@ -198,13 +205,26 @@ h1 span {
   font-size: 11px;
 }
 
+.docs-layout {
+  min-height: 0;
+  height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 175px minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+
 .docs-toc {
-  margin: 0 0 18px;
+  position: sticky;
+  top: 92px;
+  margin: 0;
   padding: 11px 14px;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 17px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.018);
@@ -216,13 +236,27 @@ h1 span {
 }
 
 .docs-toc a {
+  padding: 5px 7px;
+  border-left: 2px solid transparent;
+  border-radius: 4px;
   color: var(--text-dim);
   font-size: 10px;
   font-weight: 550;
 }
 
-.docs-toc a:hover {
+.docs-toc a:hover,
+.docs-toc a.active {
+  border-left-color: var(--accent-bright);
+  background: rgba(129, 140, 248, 0.1);
   color: var(--accent-bright);
+}
+
+.docs-content {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
 .panel {
@@ -423,11 +457,33 @@ h1 span {
   }
 
   .docs-main {
+    height: calc(100vh - 66px);
     padding-top: 30px;
   }
 
   .docs-toc {
-    gap: 8px 12px;
+    position: static;
+  }
+
+  .docs-layout {
+    height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .docs-toc {
+    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .docs-content {
+    flex: 1;
+    height: auto;
+  }
+
+  .toc-label {
+    grid-column: 1 / -1;
   }
 
   .docs-section {

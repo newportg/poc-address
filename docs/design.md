@@ -66,7 +66,6 @@ sequenceDiagram
         Loqate-->>Proxy: Verified address fields
         Proxy-->>App: Verified address fields
     end
-    Proxy->>Proxy: Cache request result and add verified address to catalog
     App->>App: Format lines from AddressFormat and show fields
     App->>Map: Center map on verified coordinates when available
 ```
@@ -85,8 +84,8 @@ be selected from either view; the expanded map also supports panning and zooming
 | Component | Responsibility |
 |-----------|----------------|
 | `poc-address-app.html` | Static interface, styles, search and API key controls, map setup, sample responses, result selection, and address rendering |
-| `loqate-client.js` | Calls the local FastAPI address endpoints and provides catalog filtering |
-| `api/main.py` | FastAPI proxy for Loqate Find and Verify, including recursive Find container drill-down, in-memory caching, and the verified-address catalog |
+| `loqate-client.js` | Calls the local FastAPI address endpoints for search and verification |
+| `api/main.py` | FastAPI proxy for Loqate Find and Verify, including recursive Find container drill-down |
 | Leaflet | Compact map preview, result markers, and expanded interactive map |
 | OpenStreetMap | Map tiles and attribution for both map views |
 | Browser `localStorage` | Stores the Loqate key under `loqate_api_key` and theme preference under `poc-address.theme.v1` |
@@ -102,9 +101,7 @@ falls back to the response's `Address` field.
 
 The application is plain browser-native HTML, CSS, and JavaScript. It has no package
 manifest, frontend framework runtime, or compile step. The FastAPI proxy exposes
-`/health`, `/heartbeat`, `/api/addresses/search`, `/api/addresses/retrieve`, and
-`/api/addresses/catalog`; `LoqateClient.catalog()` retrieves verified records and
-`LoqateClient.filterCatalog()` applies local query and country filters.
+`/health`, `/heartbeat`, `/api/addresses/search`, and `/api/addresses/retrieve`;
 FastAPI publishes interactive documentation at `/docs`. The local Podman runner
 builds `api/Containerfile`, starts the proxy, and serves the browser client.
 GitHub Pages publishes the app as `docs/index.html` and the standards guide as
@@ -114,8 +111,8 @@ GitHub Pages publishes the app as `docs/index.html` and the standards guide as
 
 - The Loqate API key is saved in browser `localStorage` and sent to the proxy in
   `X-Loqate-Api-Key`. This is not a production secret store.
-- The proxy cache and verified-address catalog are in-memory and expire after five
-  minutes by default; they are not durable address records or a user account.
+- The app and proxy have no authentication, cache, persistent address records, or
+  user account.
 - Leaflet and OpenStreetMap require network access.
 - The built-in examples are fixed fixtures, not a local address database.
 - Map pins and geocodes do not prove postal deliverability, ownership, or legal

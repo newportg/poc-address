@@ -31,17 +31,21 @@
         <p>This guide describes the current proof-of-concept implementation. The Address Explorer app is available on the GitHub Pages home page.</p>
       </aside>
 
-      <nav class="docs-toc" aria-label="Documentation sections">
-        <span class="toc-label">ON THIS PAGE</span>
-        <a href="#overview">Overview</a>
-        <a href="#upu-s42">UPU S42</a>
-        <a href="#iso-20022">ISO 20022</a>
-        <a href="#uk-format">UK Format</a>
-        <a href="#loqate-api">Loqate API</a>
-        <a href="#design">POC Design</a>
-      </nav>
+      <div class="docs-layout">
+        <nav class="docs-toc" aria-label="Documentation sections">
+          <span class="toc-label">ON THIS PAGE</span>
+          <a href="#overview">Overview</a>
+          <a href="#upu-s42">UPU S42</a>
+          <a href="#iso-20022">ISO 20022</a>
+          <a href="#uk-format">UK Format</a>
+          <a href="#loqate-api">Loqate API</a>
+          <a href="#design">POC Design</a>
+          <a href="#recreation-spec">Recreation Spec</a>
+          <a href="#api-contract">API Contract</a>
+        </nav>
 
-      <section class="docs-section panel" id="overview">
+        <div class="docs-content">
+          <section class="docs-section panel" id="overview">
   <div class="section-kicker">OVERVIEW</div>
   <h2>International Addressing Standards</h2>
     <p>Comparison of UPU S42 and ISO 20022 for global address management.</p>
@@ -74,7 +78,7 @@
 </section>
 
 
-      <section class="docs-section panel" id="upu-s42">
+          <section class="docs-section panel" id="upu-s42">
   <div class="section-kicker">UPU S42</div>
   <h2>UPU S42 Addressing Standard</h2>
     <p>Universal Postal Union framework for postal addressing.</p>
@@ -101,7 +105,7 @@
 </section>
 
 
-      <section class="docs-section panel" id="iso-20022">
+          <section class="docs-section panel" id="iso-20022">
   <div class="section-kicker">ISO 20022</div>
   <h2>ISO 20022 Address Schema</h2>
     <p>Financial messaging standard for transaction data.</p>
@@ -132,7 +136,7 @@
 </section>
 
 
-      <section class="docs-section panel" id="uk-format">
+          <section class="docs-section panel" id="uk-format">
   <div class="section-kicker">UK FORMAT</div>
   <h2>UK Address Format</h2>
     <p>As described by UPU S42 — uses 9 of 15 elements.</p>
@@ -181,7 +185,7 @@
 </section>
 
 
-      <section class="docs-section panel" id="loqate-api">
+          <section class="docs-section panel" id="loqate-api">
   <div class="section-kicker">LOQATE API</div>
   <h2>LOQATE API Integration</h2>
     <p>Reference implementation for address verification.</p>
@@ -297,7 +301,7 @@
 </section>
 
 
-      <section class="docs-section panel" id="design">
+          <section class="docs-section panel" id="design">
     <div class="section-kicker">POC DESIGN</div>
     <h2>POC Address Application Design</h2>
     <p>Current browser-native implementation.</p>
@@ -379,6 +383,272 @@
     <p><strong>Limitations:</strong> the proxy has no authentication, cache, account system, or secure server-side key store. Map display requires Leaflet CDN and OpenStreetMap access. This demonstration does not establish address deliverability, ownership, or legal status.</p>
 </section>
 
+          <section class="docs-section panel" id="recreation-spec">
+  <div class="section-kicker">RECREATION SPECIFICATION</div>
+  <h2>Application Recreation Specification</h2>
+    <p>This document is the implementation specification for recreating the Address</p>
+    <p>Explorer POC if the source application is unavailable. It complements</p>
+    <p>[design.md](./design.md), which explains the architecture and research context.</p>
+    <h3>Product purpose</h3>
+    <p>Build a static browser application that:</p>
+    <ol class="docs-list">
+      <li>Searches international addresses through Loqate.</li>
+      <li>Verifies a selected address and requests geocoding.</li>
+      <li>Displays formatted and raw verified address fields.</li>
+      <li>Shows search-result and verified-address locations on an interactive map.</li>
+      <li>Provides a catalogue of recently verified addresses with local search and</li>
+    </ol>
+    <p>   country filtering.</p>
+    <p>This is a proof of concept. It is not an address database, an identity system,</p>
+    <p>or a deliverability/legal verification service.</p>
+    <h3>Runtime shape</h3>
+    <p>The application has no frontend build step or framework:</p>
+    <pre><code>src/
+  poc-address-app.html   Complete browser application and inline UI logic
+  loqate-client.js       Browser API client and catalogue filtering helper
+  config.js              ADDRESS_API_BASE_URL configuration
+api/
+  main.py                FastAPI Loqate proxy
+  requirements.txt       FastAPI, httpx, and uvicorn
+  Containerfile          Python container image
+  start.py               Local/container server entry point
+scripts/
+  run-local.ps1          Starts the API and static client locally
+  serve-client.js        Static file server
+docs/
+  index.html              Published copy of the application
+  loqate-client.js        Published copy of the browser client
+  config.js               Published API configuration</code></pre>
+    <p>Leaflet 1.9.4 is loaded from unpkg.com. OpenStreetMap tiles are used for the</p>
+    <p>map. Both services require browser network access.</p>
+    <h3>UI specification</h3>
+    <p>The page contains:</p>
+    <ul class="docs-list">
+      <li>A dark/light theme toggle. Persist the theme as</li>
+    </ul>
+    <p>  <code>poc-address.theme.v1</code> in <code>localStorage</code>.</p>
+    <ul class="docs-list">
+      <li>Country selector with GB, US, DE, FR, ES, IT, NL, BE, IE, PT, AU, and CA.</li>
+      <li>Address/postcode query input.</li>
+      <li>Loqate API key password input and save button. Persist it as</li>
+    </ul>
+    <p>  <code>loqate_api_key</code>.</p>
+    <ul class="docs-list">
+      <li>Search button and status/error messages.</li>
+      <li>Search-results catalogue showing result text and description.</li>
+      <li>A compact map preview and an expandable full-size map dialog.</li>
+      <li>A verified-address detail panel.</li>
+      <li>A verified address catalogue with:</li>
+    </ul>
+    <p>  - refresh button;</p>
+    <p>  - free-text local filtering;</p>
+    <p>  - country filtering;</p>
+    <p>  - record count;</p>
+    <p>  - selectable records.</p>
+    <p>Selecting a search result or catalogue record must:</p>
+    <ol class="docs-list">
+      <li>Show the detail panel.</li>
+      <li>Render the verified address.</li>
+      <li>Center the map on valid latitude/longitude values.</li>
+      <li>Create or update the marker.</li>
+      <li>Open the marker popup.</li>
+    </ol>
+    <p>Catalogue selection uses its cached <code>details</code> object and must not issue another</p>
+    <p>verification request.</p>
+    <h3>Address rendering</h3>
+    <p>If <code>AddressFormat</code> is present, split it on <code><BR></code> tags. For each line, resolve</p>
+    <p>the field names against the verification response and display non-empty values.</p>
+    <p>If it is absent, display the <code>Address</code> field.</p>
+    <p>The raw field table excludes formatted/redundant fields including <code>Address</code>,</p>
+    <p><code>Address1</code>-<code>Address5</code>, <code>AddressFormat</code>, delivery-format fields, quality/status</p>
+    <p>fields, <code>Sequence</code>, <code>MatchRuleLabel</code>, <code>HyphenClass</code>, <code>ID</code>, and <code>Country</code>.</p>
+    <p>Latitude and longitude are accepted only when numeric and within normal</p>
+    <p>geographic bounds.</p>
+    <h3>Demo mode</h3>
+    <p>Without an API key, use built-in fixtures:</p>
+    <ul class="docs-list">
+      <li><code>tf26rf</code> → <code>93 Teagues Crescent</code>, Trench Telford TF2 6RF</li>
+      <li><code>EC2M 7NH</code> → <code>1 Liverpool Street</code>, London EC2M 7NH</li>
+    </ul>
+    <p>Demo verification data must include address lines, <code>AddressFormat</code>, country,</p>
+    <p>postcode, latitude, longitude, <code>AVC</code>, and <code>AQI</code>. Demo mode does not populate</p>
+    <p>the server-side catalogue.</p>
+    <h3>Client behavior</h3>
+    <p><code>LoqateClient</code> must expose:</p>
+    <pre><code>search(apiKey, country, query)       // Promise&lt;SearchItem[]&gt;
+retrieve(apiKey, result, country)     // Promise&lt;VerifiedAddress&gt;
+catalog(apiKey, country = "")        // Promise&lt;CatalogItem[]&gt;
+filterCatalog(items, query, country) // CatalogItem[]</code></pre>
+    <p><code>filterCatalog</code> performs case-insensitive local matching against the serialized</p>
+    <p>catalogue record and applies an optional exact country filter.</p>
+    <h3>API and server behavior</h3>
+    <p>The API contract is documented separately in [api-contract.md](./api-contract.md).</p>
+    <p>The proxy must:</p>
+    <ul class="docs-list">
+      <li>forward the caller's Loqate API key only to Loqate;</li>
+      <li>never include the key in an error response;</li>
+      <li>recursively follow Loqate Find containers up to five levels;</li>
+      <li>cache successful search and verification results;</li>
+      <li>add successful verified addresses to the in-memory catalogue;</li>
+      <li>isolate cache and catalogue entries by an SHA-256 API-key fingerprint;</li>
+      <li>deep-copy cached values before returning them;</li>
+      <li>expire entries after five minutes by default;</li>
+      <li>cap each cache at 256 entries;</li>
+      <li>allow <code>ADDRESS_CACHE_TTL_SECONDS=0</code> to disable caching.</li>
+    </ul>
+    <p>The cache and catalogue are intentionally process-local and non-durable.</p>
+    <h3>Configuration and operations</h3>
+    <p>Required environment variables:</p>
+    <pre><code>CORS_ORIGINS=*
+ADDRESS_CACHE_TTL_SECONDS=300</code></pre>
+    <p>Optional:</p>
+    <pre><code>LOQATE_CA_BUNDLE=C:\path\company-root.cer</code></pre>
+    <p>The API listens on port 8001. The local static client is served on port 5174.</p>
+    <p>Run the local environment with:</p>
+    <pre><code>powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1</code></pre>
+    <h3>Acceptance checklist</h3>
+    <ul class="docs-list">
+      <li>Search sends <code>q</code>, <code>country</code>, and <code>X-Loqate-Api-Key</code>.</li>
+      <li>Repeated identical searches do not call Loqate while the cache is valid.</li>
+      <li>Verification returns the first verified match and caches it.</li>
+      <li><code>GET /api/addresses/catalog</code> returns verified records for the caller's key.</li>
+      <li>Catalogue query and country filters work without another API request.</li>
+      <li>Catalogue selection displays details and updates the map.</li>
+      <li>Invalid upstream JSON, timeouts, network errors, and upstream errors produce</li>
+    </ul>
+    <p>  explicit user-visible failures.</p>
+    <ul class="docs-list">
+      <li>API keys never appear in logs, response bodies, or error details.</li>
+      <li>API tests cover forwarding, caching, catalogue retrieval, filtering, and</li>
+    </ul>
+    <p>  upstream failure handling.</p>
+</section>
+
+
+          <section class="docs-section panel" id="api-contract">
+  <div class="section-kicker">API CONTRACT</div>
+  <h2>Address API Contract</h2>
+    <p>The API is a FastAPI proxy for Loqate. The default local base URL is</p>
+    <p><code>http://127.0.0.1:8001</code>.</p>
+    <p>All address endpoints require:</p>
+    <pre><code>X-Loqate-Api-Key: &lt;caller Loqate key&gt;
+Accept: application/json</code></pre>
+    <p>The proxy does not persist or expose the API key.</p>
+    <h3><code>GET /health</code></h3>
+    <p>Response:</p>
+    <pre><code>{"status": "ok"}</code></pre>
+    <h3><code>GET /heartbeat</code></h3>
+    <p>Response:</p>
+    <pre><code>{"status": "awake"}</code></pre>
+    <h3><code>GET /api/addresses/search</code></h3>
+    <p>Query parameters:</p>
+    <table>
+      <tr><th>Parameter</th><th>Required</th><th>Rules</th></tr>
+      <tr><td>---</td><td>---:</td><td>---</td></tr>
+      <tr><td><code>q</code></td><td>yes</td><td>1-160 characters; address or postcode</td></tr>
+      <tr><td><code>country</code></td><td>yes</td><td>Two alphabetic characters; normalized uppercase</td></tr>
+    </table>
+    <p>Example:</p>
+    <pre><code>GET /api/addresses/search?q=tf26rf&amp;country=GB
+X-Loqate-Api-Key: caller-key</code></pre>
+    <p>Response:</p>
+    <pre><code>{
+  "items": [
+    {
+      "id": "GB|RM|B|24490784|ENG",
+      "text": "93 Teagues Crescent",
+      "description": "Trench Telford TF2 6RF"
+    }
+  ]
+}</code></pre>
+    <p>The proxy calls Loqate Find with <code>Limit=100</code>. If the first response is a</p>
+    <p>container rather than an address, it follows the first container's <code>Id</code> using</p>
+    <p><code>Container</code>, up to five levels.</p>
+    <h3><code>POST /api/addresses/retrieve</code></h3>
+    <p>Request:</p>
+    <pre><code>{
+  "id": "GB|RM|B|24490784|ENG",
+  "text": "93 Teagues Crescent",
+  "description": "Trench Telford TF2 6RF",
+  "country": "GB"
+}</code></pre>
+    <p>Rules:</p>
+    <ul class="docs-list">
+      <li><code>id</code> and <code>text</code> are required non-empty strings.</li>
+      <li><code>description</code> defaults to an empty string.</li>
+      <li><code>country</code> is exactly two characters and is normalized uppercase.</li>
+      <li>Unknown request fields are rejected.</li>
+    </ul>
+    <p>The proxy calls Loqate International Batch Verify with geocoding enabled and</p>
+    <p>returns the first item in <code>Matches</code>, or the item itself when <code>Matches</code> is</p>
+    <p>absent.</p>
+    <p>Example response:</p>
+    <pre><code>{
+  "Address": "93 Teagues Crescent&lt;br&gt;Trench&lt;br&gt;Telford&lt;br&gt;TF2 6RF",
+  "Address1": "93 Teagues Crescent",
+  "Address2": "Trench",
+  "Locality": "Telford",
+  "DependentLocality": "Trench",
+  "PostalCode": "TF2 6RF",
+  "CountryName": "United Kingdom",
+  "ISO3166_2": "GB",
+  "Latitude": "52.707846",
+  "Longitude": "-2.460302",
+  "AVC": "V44-I44-P6-100",
+  "AQI": "A"
+}</code></pre>
+    <p>Successful verification adds a record to the process-local catalogue.</p>
+    <h3><code>GET /api/addresses/catalog</code></h3>
+    <p>Optional query parameter:</p>
+    <table>
+      <tr><th>Parameter</th><th>Rules</th></tr>
+      <tr><td><code>country</code></td><td>Optional two-letter country code</td></tr>
+    </table>
+    <p>Example:</p>
+    <pre><code>GET /api/addresses/catalog?country=GB
+X-Loqate-Api-Key: caller-key</code></pre>
+    <p>Response:</p>
+    <pre><code>{
+  "items": [
+    {
+      "id": "GB|RM|B|24490784|ENG",
+      "text": "93 Teagues Crescent",
+      "description": "Trench Telford TF2 6RF",
+      "country": "GB",
+      "details": {
+        "Address": "93 Teagues Crescent&lt;br&gt;Trench&lt;br&gt;Telford&lt;br&gt;TF2 6RF",
+        "Latitude": "52.707846",
+        "Longitude": "-2.460302"
+      }
+    }
+  ]
+}</code></pre>
+    <p>The catalogue contains only successfully verified addresses. It is scoped by</p>
+    <p>the caller's API-key fingerprint and is not durable. An empty catalogue returns</p>
+    <p><code>{"items":[]}</code>.</p>
+    <h3>Errors</h3>
+    <p>The proxy uses FastAPI validation responses (<code>422</code>) for invalid requests and:</p>
+    <table>
+      <tr><th>Status</th><th>Meaning</th></tr>
+      <tr><td>---:</td><td>---</td></tr>
+      <tr><td><code>502</code></td><td>Loqate network failure, rejected response, invalid JSON, or unexpected payload</td></tr>
+      <tr><td><code>504</code></td><td>Loqate request timed out</td></tr>
+    </table>
+    <p>Error bodies use:</p>
+    <pre><code>{"detail": "A human-readable message"}</code></pre>
+    <p>Messages must not echo the API key.</p>
+    <h3>Cache behavior</h3>
+    <p>Successful search and retrieve requests are cached in process memory for five</p>
+    <p>minutes by default. Configure the duration with</p>
+    <p><code>ADDRESS_CACHE_TTL_SECONDS</code>. Setting it to <code>0</code> disables storage and causes</p>
+    <p>catalogue records to expire immediately. Each cache is capped at 256 entries.</p>
+    <p>Cache keys include an SHA-256 API-key fingerprint, so callers cannot see another</p>
+    <p>caller's cached results.</p>
+</section>
+
+
+        </div>
+      </div>
 
       <footer class="page-footer">
         <a href="./index.html">Address Explorer</a>
@@ -386,5 +656,38 @@
       </footer>
     </main>
   </div>
+  <script>
+    (() => {
+      const links = [...document.querySelectorAll('.docs-toc a')];
+      const sections = links
+        .map(link => document.querySelector(link.hash))
+        .filter(Boolean);
+
+      links.forEach(link => {
+        link.addEventListener('click', event => {
+          const section = document.querySelector(link.hash);
+          if (!section) return;
+          event.preventDefault();
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          history.replaceState(null, '', link.hash);
+        });
+      });
+
+      const setActive = section => {
+        links.forEach(link => link.classList.toggle('active', link.hash === `#${section.id}`));
+      };
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => {
+          const visible = entries
+            .filter(entry => entry.isIntersecting)
+            .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top);
+          if (visible[0]) setActive(visible[0].target);
+        }, { rootMargin: '-90px 0px -65% 0px', threshold: 0 });
+        sections.forEach(section => observer.observe(section));
+      } else if (sections[0]) {
+        setActive(sections[0]);
+      }
+    })();
+  </script>
 </body>
 </html>

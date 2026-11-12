@@ -31,22 +31,30 @@
         <p>This guide describes the current proof-of-concept implementation. The Address Explorer app is available on the GitHub Pages home page.</p>
       </aside>
 
-      <nav class="docs-toc" aria-label="Documentation sections">
-        <span class="toc-label">ON THIS PAGE</span>
-        <a href="#overview">Overview</a>
-        <a href="#upu-s42">UPU S42</a>
-        <a href="#iso-20022">ISO 20022</a>
-        <a href="#uk-format">UK Format</a>
-        <a href="#loqate-api">Loqate API</a>
-        <a href="#design">POC Design</a>
-      </nav>
+      <div class="docs-layout">
+        <nav class="docs-toc" aria-label="Documentation sections">
+          <span class="toc-label">ON THIS PAGE</span>
+          <a href="#overview">Overview</a>
+          <a href="#upu-s42">UPU S42</a>
+          <a href="#iso-20022">ISO 20022</a>
+          <a href="#uk-format">UK Format</a>
+          <a href="#loqate-api">Loqate API</a>
+          <a href="#design">POC Design</a>
+          <a href="#recreation-spec">Recreation Spec</a>
+          <a href="#api-contract">API Contract</a>
+        </nav>
 
-      {{OVERVIEW}}
-      {{UPU}}
-      {{ISO}}
-      {{UK}}
-      {{API}}
-      {{DESIGN}}
+        <div class="docs-content">
+          {{OVERVIEW}}
+          {{UPU}}
+          {{ISO}}
+          {{UK}}
+          {{API}}
+          {{DESIGN}}
+          {{RECREATION}}
+          {{CONTRACT}}
+        </div>
+      </div>
 
       <footer class="page-footer">
         <a href="./index.html">Address Explorer</a>
@@ -54,5 +62,38 @@
       </footer>
     </main>
   </div>
+  <script>
+    (() => {
+      const links = [...document.querySelectorAll('.docs-toc a')];
+      const sections = links
+        .map(link => document.querySelector(link.hash))
+        .filter(Boolean);
+
+      links.forEach(link => {
+        link.addEventListener('click', event => {
+          const section = document.querySelector(link.hash);
+          if (!section) return;
+          event.preventDefault();
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          history.replaceState(null, '', link.hash);
+        });
+      });
+
+      const setActive = section => {
+        links.forEach(link => link.classList.toggle('active', link.hash === `#${section.id}`));
+      };
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => {
+          const visible = entries
+            .filter(entry => entry.isIntersecting)
+            .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top);
+          if (visible[0]) setActive(visible[0].target);
+        }, { rootMargin: '-90px 0px -65% 0px', threshold: 0 });
+        sections.forEach(section => observer.observe(section));
+      } else if (sections[0]) {
+        setActive(sections[0]);
+      }
+    })();
+  </script>
 </body>
 </html>

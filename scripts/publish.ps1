@@ -125,6 +125,16 @@ $iso      = Docs-Section 'iso-20022' 'ISO 20022' 'ISO 20022 Address Schema' (Con
 $uk       = Docs-Section 'uk-format' 'UK FORMAT' 'UK Address Format' (Convert-WikiPage (Join-Path $wiki 'UK-Address-Format.md'))
 $api      = Docs-Section 'loqate-api' 'LOQATE API' 'LOQATE API Integration' (Convert-WikiPage (Join-Path $wiki 'Loqate-api.md'))
 $design   = Get-Content (Join-Path $repoRoot 'src\design-tab.html') -Raw -Encoding UTF8
+$recreationPath = Join-Path $repoRoot 'docs\recreation-spec.md'
+$contractPath = Join-Path $repoRoot 'docs\api-contract.md'
+if (-not (Test-Path -LiteralPath $recreationPath)) {
+  throw "Required supplementary documentation is missing: $recreationPath"
+}
+if (-not (Test-Path -LiteralPath $contractPath)) {
+  throw "Required supplementary documentation is missing: $contractPath"
+}
+$recreation = Docs-Section 'recreation-spec' 'RECREATION SPECIFICATION' 'Application Recreation Specification' (Convert-WikiPage $recreationPath)
+$contract  = Docs-Section 'api-contract' 'API CONTRACT' 'Address API Contract' (Convert-WikiPage $contractPath)
 
 $page = $tmpl
 $page = $page.Replace('{{OVERVIEW}}', $overview)
@@ -133,6 +143,8 @@ $page = $page.Replace('{{ISO}}',      $iso)
 $page = $page.Replace('{{UK}}',       $uk)
 $page = $page.Replace('{{API}}',      $api)
 $page = $page.Replace('{{DESIGN}}',   $design)
+$page = $page.Replace('{{RECREATION}}', $recreation)
+$page = $page.Replace('{{CONTRACT}}',   $contract)
 
 New-Item -ItemType Directory -Force $out | Out-Null
 Set-Content (Join-Path $out 'documentation.html') $page -NoNewline -Encoding UTF8
@@ -153,4 +165,5 @@ Copy-Item (Join-Path $appSource 'config.js') (Join-Path $out 'config.js')
 
 # Stage for GitHub Pages (served from /docs on the repo root)
 New-Item -ItemType File -Force (Join-Path $out '.nojekyll') | Out-Null
+Write-Host "Included supplementary documentation in documentation.html."
 Write-Host "Published Address Explorer as the home page and the standards guide separately."

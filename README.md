@@ -60,9 +60,18 @@ generates the GitHub Pages site under `docs\`:
 - `docs\loqate-client.js` — browser-side Loqate client for the home page
 - `docs\config.js` — API base URL configuration for the published client
 - `docs\design.md` — copy of the current POC design note in the Address vault project
+- `docs\recreation-spec.md` — source-independent application recreation specification
+- `docs\api-contract.md` — API endpoint, payload, error, and cache contract project
+
+The supplementary documents are also rendered as the final sections of
+`docs\documentation.html`. project
 
 The default vault location is the sibling `C:\Source\Obsidian\...` checkout shown
 above. Pass `-VaultProjectPath` if the vault is checked out elsewhere.
+
+The local runner invokes `scripts\publish.ps1` before copying the client into its
+temporary serving directory, so the local app always uses freshly rebuilt
+documentation and verifies that the supplementary documentation is present.
 
 ## Publish to GitHub Pages
 
@@ -90,3 +99,7 @@ minutes by default (`ADDRESS_CACHE_TTL_SECONDS` configures this). Verified
 addresses are available through `GET /api/addresses/catalog`; the client exposes
 `LoqateClient.catalog()` and `LoqateClient.filterCatalog()` for catalogue
 retrieval and Party-style local filtering.
+
+For source-independent recreation guidance, see
+[`docs\recreation-spec.md`](docs/recreation-spec.md) and the detailed
+[`docs\api-contract.md`](docs/api-contract.md).

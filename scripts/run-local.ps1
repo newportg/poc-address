@@ -38,6 +38,12 @@ try {
         throw "Node.js was not found. Install Node.js to serve the local browser client."
     }
 
+    Write-Host "Rebuilding the local documentation site..."
+    & (Join-Path $PSScriptRoot "publish.ps1")
+    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+        throw "Documentation publishing failed with exit code $LASTEXITCODE."
+    }
+
     & podman info *> $null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Starting the Podman machine..."
